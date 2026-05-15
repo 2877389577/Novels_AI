@@ -2,10 +2,14 @@ package main
 
 import (
 	"Novels_AI/backend/internal/bootstrap"
+	"Novels_AI/backend/internal/service"
 	"flag"
+	"fmt"
 	"log"
 	"log/slog"
 	"os"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -33,5 +37,13 @@ func main() {
 	if _, err = bootstrap.NewDB(config.System.Postgres); err != nil {
 		slog.Error("init database failed", "error", err)
 		os.Exit(1)
+	}
+
+	// 初始化 HTTP 服务
+	engine := gin.Default()
+	service.AddRoute(engine)
+	if err := engine.Run(fmt.Sprintf("%s:%d", config.Server.Host, config.Server.Port)); err != nil {
+		slog.Error("start server failed", "error", err)
+		panic(err)
 	}
 }
