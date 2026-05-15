@@ -27,20 +27,19 @@ const (
 //
 // 这里不直接设置全局默认 logger，调用方可以决定是否通过 slog.SetDefault 接管全局日志。
 // 初始化过程分为两步：先解析日志级别，再根据 output 选择控制台 writer 或文件轮转 writer。
-func NewLogger(config LogConfig) error {
+func NewLogger(config LogConfig) (*slog.Logger, error) {
 	level, err := parseLogLevel(config.Level)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	writer, err := newLogWriter(config)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	handler := slog.NewTextHandler(writer, &slog.HandlerOptions{Level: level})
-	slog.SetDefault(slog.New(handler))
-	return nil
+	return slog.New(handler), nil
 }
 
 // newLogWriter 根据日志输出配置返回 slog handler 使用的 io.Writer。
