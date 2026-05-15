@@ -1,0 +1,27 @@
+server:
+  port: 8080
+  host: 0.0.0.0
+
+# log 控制应用日志输出。
+# output:
+#   console/stdout 表示输出到控制台；
+#   file 表示写入 file.path 指定的日志文件。
+# level 支持 debug、info、warn、error，低于该级别的日志不会输出。
+log:
+  output: console
+  level: error
+  # file 仅在 output: file 时生效。
+  # max_size_mb 表示单个日志文件最大体积，达到阈值后轮转。
+  # max_backups 表示最多保留多少个历史备份文件。
+  file:
+    path: logs/novels_ai.log
+    max_size_mb: 100
+    max_backups: 5
+
+system:
+  postgres:
+    host: localhost
+    port: 5432
+    user: postgres
+    password: postgres
+    dbname: novels_ai
