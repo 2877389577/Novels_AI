@@ -14,7 +14,7 @@ import (
 
 func main() {
 	// 读取命令行传入的配置文件路径；如果没有传入，则使用项目默认配置文件。
-	configPath := flag.String("config", "config/config.yaml", "config file path")
+	configPath := flag.String("conf", "config/config.yaml", "config file path")
 	flag.Parse()
 
 	// 加载配置
