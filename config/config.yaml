@@ -1,0 +1,20 @@
+server:
+  port: 8080
+  host: 0.0.0.0
+
+log:
+  output: console
+  level: info
+  file:
+    path: logs/novels_ai.log
+    max_size_mb: 100
+    max_backups: 5
+
+system:
+  postgres:
+    host: localhost
+    port: 5432
+    user: postgres
+    password: postgres
+    dbname: novels_ai
+
