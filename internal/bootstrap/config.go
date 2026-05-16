@@ -9,6 +9,8 @@ import (
 type Config struct {
 	Server ServerConfig `mapstructure:"server" yaml:"server"`
 	System SystemConfig `mapstructure:"system" yaml:"system"`
+	// RateLimit 保存全局 HTTP 请求限速配置。
+	RateLimit RateLimitConfig `mapstructure:"rate_limit" yaml:"rate_limit"`
 	// Log 保存日志服务相关配置，用于控制日志输出位置、日志级别以及文件轮转策略。
 	Log LogConfig `mapstructure:"log" yaml:"log"`
 }
@@ -16,6 +18,12 @@ type Config struct {
 type ServerConfig struct {
 	Port int    `mapstructure:"port" yaml:"port"`
 	Host string `mapstructure:"host" yaml:"host"`
+}
+
+// RateLimitConfig 定义全局 HTTP 请求限速配置。
+type RateLimitConfig struct {
+	// RequestsPerMinute 表示每分钟允许通过的请求数量；小于等于 0 时关闭限速。
+	RequestsPerMinute int `mapstructure:"requests_per_minute" yaml:"requests_per_minute"`
 }
 
 // LogConfig 定义日志服务的顶层配置。

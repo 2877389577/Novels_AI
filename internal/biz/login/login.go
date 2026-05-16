@@ -1,16 +1,92 @@
 package login
 
 import (
+	"context"
+	"errors"
+	"log/slog"
+
+	"Novels_AI/backend/internal/data"
+	"Novels_AI/backend/internal/pkg/common"
+
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
 type LoginUseCase struct {
-	db *gorm.DB
+	adminInfoData *data.AdminInfoData
 }
 
-func NewLoginUseCase(db *gorm.DB) *LoginUseCase {
-	return &LoginUseCase{db: db}
+func NewLoginUseCase(adminInfoData *data.AdminInfoData) *LoginUseCase {
+	return &LoginUseCase{adminInfoData: adminInfoData}
 }
-func (lu *LoginUseCase) Login(passwd string) {
 
+// IsPasswordInitialized 检查管理员初始化密码是否已经设置。
+func (lu *LoginUseCase) IsPasswordInitialized(ctx context.Context) (bool, error) {
+	admin, err := lu.adminInfoData.FirstActive(ctx)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		slog.ErrorContext(ctx, "IsPasswordInitialized failed", "err", err)
+		return false, err
+	}
+
+	return admin.Password != "", nil
+}
+
+// SetPassword 仅在管理员密码为空时写入首次初始化密码。
+func (lu *LoginUseCase) SetPassword(ctx context.Context, passwd string) error {
+	admin, err := lu.adminInfoData.FirstActive(ctx)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+	if admin.Password != "" {
+		return common.PasswordAlreadySet
+	}
+
+	hashedPassword, err := hashPassword(passwd)
+	if err != nil {
+		slog.ErrorContext(ctx, "hashing password failed", "err", err)
+		return err
+	}
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return lu.adminInfoData.Create(ctx, hashedPassword)
+	}
+
+	return lu.adminInfoData.SetPassword(ctx, hashedPassword)
+}
+
+// Login 校验初始化密码，密码正确时允许本次登录通过。
+func (lu *LoginUseCase) Login(ctx context.Context, passwd string) error {
+	admin, err := lu.adminInfoData.FirstActive(ctx)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return common.NoInitialPassword
+	}
+	if err != nil {
+		slog.ErrorContext(ctx, "Login failed", "err", err)
+		return err
+	}
+	if admin.Password == "" {
+		return common.NoInitialPassword
+	}
+	if !checkPassword(admin.Password, passwd) {
+		return common.PasswordIncorrect
+	}
+
+	return nil
+}
+
+// hashPassword 使用 bcrypt 保存密码，避免数据库中出现明文密码。
+func hashPassword(passwd string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(passwd), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+
+	return string(bytes), nil
+}
+
+func checkPassword(hashedPassword, passwd string) bool {
+	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(passwd)) == nil
 }

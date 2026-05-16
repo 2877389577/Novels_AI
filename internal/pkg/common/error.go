@@ -17,5 +17,7 @@ func NewSystemError(code int, msg string) *SystemError {
 }
 
 var (
-	NoInitialPassword = NewSystemError(1000, "没有初始密码")
+	NoInitialPassword  = NewSystemError(1000, "没有初始密码")
+	PasswordAlreadySet = NewSystemError(1001, "密码已设置")
+	PasswordIncorrect  = NewSystemError(1002, "密码错误")
 )
