@@ -12,6 +12,25 @@ rate_limit:
 session:
   salt: novels-ai-session-salt
 
+# upload 控制文件上传到 S3 兼容对象存储。
+upload:
+  s3:
+    # endpoint 是对象存储 API 地址；MinIO 示例：http://localhost:9000
+    endpoint: http://localhost:9000
+    # region 是签名区域；S3 兼容服务通常可以使用 us-east-1。
+    region: us-east-1
+    # bucket 是上传目标桶，请提前创建并配置公开读取策略。
+    bucket: novels-ai
+    # 生产环境请替换为真实访问密钥，避免使用示例值。
+    access_key_id: your-access-key-id
+    secret_access_key: your-secret-access-key
+    # public_base_url 是前端可访问的公开地址前缀，通常是 CDN 或桶公开访问地址。
+    public_base_url: http://localhost:9000/novels-ai
+    # MinIO 等 S3 兼容服务通常需要 path-style。
+    use_path_style: true
+    # prefix 用于把上传文件放到固定目录下。
+    prefix: uploads
+
 # log 控制应用日志输出。
 # output:
 #   console/stdout 表示输出到控制台；
