@@ -22,7 +22,7 @@ func NewDB(config PostgresConfig) (*gorm.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("connect postgres database: %w", err)
 	}
-	slog.Info("connect postgres database success", "dsn", dsn)
+	slog.Info("connect postgres database success")
 
 	return db, nil
 }

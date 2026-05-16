@@ -1,12 +1,16 @@
 package service
 
 import (
+	docs "Novels_AI/backend/docs"
+	loginbiz "Novels_AI/backend/internal/biz/login"
+	"Novels_AI/backend/internal/data"
 	"Novels_AI/backend/internal/middleware"
 	"Novels_AI/backend/internal/service/login"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"gorm.io/gorm"
 )
 
 // @title           AI小说系统接口文档
@@ -26,17 +30,27 @@ import (
 
 // @externalDocs.description  OpenAPI
 // @externalDocs.url          https://swagger.io/resources/open-api/
-func AddRoute(engine *gin.Engine) {
+func AddRoute(engine *gin.Engine, requestsPerMinute int, db *gorm.DB) {
+	docs.SwaggerInfo.BasePath = "/api/v1"
+
+	// 中间件
+	engine.Use(middleware.RequestID())
+	engine.Use(middleware.RateLimiter(requestsPerMinute))
+	engine.Use(middleware.ErrorHandler())
+	engine.Use(gin.Recovery())
 
 	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	// 中间件
-	engine.Use(middleware.ErrorHandler())
-
 	// 登陆相关接口
-	loginService := login.NewLoginService()
+	adminInfoData := data.NewAdminInfoData(db)
+	loginUseCase := loginbiz.NewLoginUseCase(adminInfoData)
+	loginService := login.NewLoginService(loginUseCase)
 
 	group := engine.Group("/api/v1")
+	// 检查初始化密码接口
+	group.GET("/login/initial-password", loginService.CheckInitialPassword)
+	// 设置初始化密码接口
+	group.POST("/login/password", loginService.SetPassword)
 	// 登陆接口
 	group.POST("/login", loginService.Login)
 }

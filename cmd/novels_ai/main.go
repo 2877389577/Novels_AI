@@ -34,14 +34,15 @@ func main() {
 	slog.SetDefault(logger)
 
 	// 初始化数据库
-	if _, err = bootstrap.NewDB(config.System.Postgres); err != nil {
+	db, err := bootstrap.NewDB(config.System.Postgres)
+	if err != nil {
 		slog.Error("init database failed", "error", err)
 		os.Exit(1)
 	}
 
 	// 初始化 HTTP 服务
-	engine := gin.Default()
-	service.AddRoute(engine)
+	engine := gin.New()
+	service.AddRoute(engine, config.RateLimit.RequestsPerMinute, db)
 	if err := engine.Run(fmt.Sprintf("%s:%d", config.Server.Host, config.Server.Port)); err != nil {
 		slog.Error("start server failed", "error", err)
 		panic(err)

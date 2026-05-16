@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"Novels_AI/backend/internal/middleware"
 	"fmt"
 	"io"
 	"log/slog"
@@ -38,7 +39,8 @@ func NewLogger(config LogConfig) (*slog.Logger, error) {
 		return nil, err
 	}
 
-	handler := slog.NewJSONHandler(writer, &slog.HandlerOptions{Level: level, AddSource: true})
+	// 包装 handler 后，只要日志调用携带请求 context，就会自动输出 request_id。
+	handler := middleware.NewRequestIDLogHandler(slog.NewJSONHandler(writer, &slog.HandlerOptions{Level: level, AddSource: true}))
 	return slog.New(handler), nil
 }
 
