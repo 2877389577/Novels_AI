@@ -3,9 +3,11 @@ package service
 import (
 	docs "Novels_AI/backend/docs"
 	loginbiz "Novels_AI/backend/internal/biz/login"
+	novelbiz "Novels_AI/backend/internal/biz/novel"
 	"Novels_AI/backend/internal/data"
 	"Novels_AI/backend/internal/middleware"
 	"Novels_AI/backend/internal/service/login"
+	novelservice "Novels_AI/backend/internal/service/novel"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -48,6 +50,9 @@ func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, db 
 	adminInfoData := data.NewAdminInfoData(db)
 	loginUseCase := loginbiz.NewLoginUseCase(adminInfoData)
 	loginService := login.NewLoginService(loginUseCase)
+	novelData := data.NewNovelData(db)
+	novelUseCase := novelbiz.NewNovelUseCase(novelData)
+	novelService := novelservice.NewNovelService(novelUseCase)
 
 	group := engine.Group("/api/v1")
 	// 检查初始化密码接口
@@ -56,4 +61,12 @@ func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, db 
 	group.POST("/login/password", loginService.SetPassword)
 	// 登陆接口
 	group.POST("/login", loginService.Login)
+
+	// 小说相关接口需要登录会话，避免未登录用户直接维护小说数据。
+	novelGroup := group.Group("/novels", middleware.SessionAuth())
+	novelGroup.POST("", novelService.Create)
+	novelGroup.GET("", novelService.List)
+	novelGroup.GET("/:id", novelService.Get)
+	novelGroup.PUT("/update", novelService.Update)
+	novelGroup.DELETE("/:id", novelService.Delete)
 }

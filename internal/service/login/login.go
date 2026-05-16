@@ -12,8 +12,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const sessionCookieName = "novels_ai_session"
-
 type LoginService struct {
 	useCase LoginUseCase
 }
@@ -106,7 +104,7 @@ func (service *LoginService) Login(c *gin.Context) {
 		return
 	}
 
-	err = common.SetSession(c, sessionCookieName, sessionID)
+	err = common.SetSession(c, common.SessionKey, sessionID)
 	if err != nil {
 		_ = c.Error(err)
 		return

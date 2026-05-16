@@ -21,3 +21,7 @@ var (
 	PasswordAlreadySet = NewSystemError(1001, "密码已设置")
 	PasswordIncorrect  = NewSystemError(1002, "密码错误")
 )
+
+var (
+	InvalidRequest = NewSystemError(2000, "请求参数错误")
+)

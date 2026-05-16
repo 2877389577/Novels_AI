@@ -25,7 +25,6 @@ func NewAdminInfoData(db *gorm.DB) *AdminInfoData {
 func (a *AdminInfoData) FirstActive(ctx context.Context) (*AdminInfo, error) {
 	var admin model.AdminInfo
 	err := a.db.WithContext(ctx).
-		Where("del_flag = ?", 0).
 		Order("id ASC").
 		First(&admin).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
