@@ -11,6 +11,8 @@ type Config struct {
 	System SystemConfig `mapstructure:"system" yaml:"system"`
 	// RateLimit 保存全局 HTTP 请求限速配置。
 	RateLimit RateLimitConfig `mapstructure:"rate_limit" yaml:"rate_limit"`
+	// Session 保存浏览器会话相关配置。
+	Session SessionConfig `mapstructure:"session" yaml:"session"`
 	// Log 保存日志服务相关配置，用于控制日志输出位置、日志级别以及文件轮转策略。
 	Log LogConfig `mapstructure:"log" yaml:"log"`
 }
@@ -24,6 +26,12 @@ type ServerConfig struct {
 type RateLimitConfig struct {
 	// RequestsPerMinute 表示每分钟允许通过的请求数量；小于等于 0 时关闭限速。
 	RequestsPerMinute int `mapstructure:"requests_per_minute" yaml:"requests_per_minute"`
+}
+
+// SessionConfig 定义浏览器会话配置。
+type SessionConfig struct {
+	// Salt 用于 gin session cookie store 的签名/加密盐。
+	Salt string `mapstructure:"salt" yaml:"salt"`
 }
 
 // LogConfig 定义日志服务的顶层配置。

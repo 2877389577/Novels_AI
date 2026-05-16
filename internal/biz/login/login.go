@@ -9,21 +9,26 @@ import (
 	"Novels_AI/backend/internal/pkg/common"
 
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
 )
 
 type LoginUseCase struct {
-	adminInfoData *data.AdminInfoData
+	adminInfoData AdminInfoRepo
 }
 
-func NewLoginUseCase(adminInfoData *data.AdminInfoData) *LoginUseCase {
+type AdminInfoRepo interface {
+	FirstActive(ctx context.Context) (*data.AdminInfo, error)
+	Create(ctx context.Context, passwd string) error
+	SetPassword(ctx context.Context, passwd string) error
+}
+
+func NewLoginUseCase(adminInfoData AdminInfoRepo) *LoginUseCase {
 	return &LoginUseCase{adminInfoData: adminInfoData}
 }
 
 // IsPasswordInitialized 检查管理员初始化密码是否已经设置。
 func (lu *LoginUseCase) IsPasswordInitialized(ctx context.Context) (bool, error) {
 	admin, err := lu.adminInfoData.FirstActive(ctx)
-	if errors.Is(err, gorm.ErrRecordNotFound) {
+	if errors.Is(err, data.ErrAdminInfoNotFound) {
 		return false, nil
 	}
 	if err != nil {
@@ -37,20 +42,21 @@ func (lu *LoginUseCase) IsPasswordInitialized(ctx context.Context) (bool, error)
 // SetPassword 仅在管理员密码为空时写入首次初始化密码。
 func (lu *LoginUseCase) SetPassword(ctx context.Context, passwd string) error {
 	admin, err := lu.adminInfoData.FirstActive(ctx)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+	if err != nil && !errors.Is(err, data.ErrAdminInfoNotFound) {
 		return err
 	}
-	if admin.Password != "" {
+	if err == nil && admin.Password != "" {
 		return common.PasswordAlreadySet
 	}
 
+	adminNotFound := errors.Is(err, data.ErrAdminInfoNotFound)
 	hashedPassword, err := hashPassword(passwd)
 	if err != nil {
 		slog.ErrorContext(ctx, "hashing password failed", "err", err)
 		return err
 	}
 
-	if errors.Is(err, gorm.ErrRecordNotFound) {
+	if adminNotFound {
 		return lu.adminInfoData.Create(ctx, hashedPassword)
 	}
 
@@ -60,7 +66,7 @@ func (lu *LoginUseCase) SetPassword(ctx context.Context, passwd string) error {
 // Login 校验初始化密码，密码正确时允许本次登录通过。
 func (lu *LoginUseCase) Login(ctx context.Context, passwd string) error {
 	admin, err := lu.adminInfoData.FirstActive(ctx)
-	if errors.Is(err, gorm.ErrRecordNotFound) {
+	if errors.Is(err, data.ErrAdminInfoNotFound) {
 		return common.NoInitialPassword
 	}
 	if err != nil {

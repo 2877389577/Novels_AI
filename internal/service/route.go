@@ -7,6 +7,8 @@ import (
 	"Novels_AI/backend/internal/middleware"
 	"Novels_AI/backend/internal/service/login"
 
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -30,7 +32,7 @@ import (
 
 // @externalDocs.description  OpenAPI
 // @externalDocs.url          https://swagger.io/resources/open-api/
-func AddRoute(engine *gin.Engine, requestsPerMinute int, db *gorm.DB) {
+func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, db *gorm.DB) {
 	docs.SwaggerInfo.BasePath = "/api/v1"
 
 	// 中间件
@@ -38,6 +40,7 @@ func AddRoute(engine *gin.Engine, requestsPerMinute int, db *gorm.DB) {
 	engine.Use(middleware.RateLimiter(requestsPerMinute))
 	engine.Use(middleware.ErrorHandler())
 	engine.Use(gin.Recovery())
+	engine.Use(sessions.Sessions("go-session", cookie.NewStore([]byte(sessionSalt))))
 
 	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 

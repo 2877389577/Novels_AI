@@ -33,21 +33,24 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "login"
+                ],
                 "summary": "登陆接口",
                 "parameters": [
                     {
-                        "description": "Password",
+                        "description": "密码",
                         "name": "password",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/login.passwordRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "code = 0，表示登陆成功,code = 1000，表示没有初始密码,登陆失败",
+                        "description": "code = 0，表示登陆成功; code = 1000，表示没有初始密码,登陆失败",
                         "schema": {
                             "$ref": "#/definitions/common.Response"
                         }
@@ -67,10 +70,13 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "login"
+                ],
                 "summary": "检查初始化密码",
                 "responses": {
                     "200": {
-                        "description": "检查成功",
+                        "description": "code = 0 表示检查成功;data.initialized 表示是否已设置初始化密码",
                         "schema": {
                             "allOf": [
                                 {
@@ -107,6 +113,9 @@ const docTemplate = `{
                 ],
                 "produces": [
                     "application/json"
+                ],
+                "tags": [
+                    "login"
                 ],
                 "summary": "设置初始化密码",
                 "parameters": [

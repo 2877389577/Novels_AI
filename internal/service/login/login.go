@@ -34,6 +34,7 @@ func NewLoginService(useCase LoginUseCase) *LoginService {
 
 // @Summary 检查初始化密码
 // @Description 检查管理员初始化密码是否已经设置
+// @Tags login
 // @Produce json
 // @Success 200 {object} common.Response{data=map[string]bool} "code = 0 表示检查成功;data.initialized 表示是否已设置初始化密码"
 // @Failure 500 {object} common.SystemError "系统错误"
@@ -54,6 +55,7 @@ func (service *LoginService) CheckInitialPassword(c *gin.Context) {
 
 // @Summary 设置初始化密码
 // @Description 仅在管理员密码为空时允许设置初始化密码
+// @Tags login
 // @Accept json
 // @Produce json
 // @Param password body passwordRequest true "Password"
@@ -80,9 +82,10 @@ func (service *LoginService) SetPassword(c *gin.Context) {
 
 // @Summary 登陆接口
 // @Description 登陆接口，只需要接受密码
+// @Tags login
 // @Accept       json
 // @Produce      json
-// @Param        password   body      string  true  "Password"
+// @Param        password   body      passwordRequest true "密码"
 // @Success      200 {object} common.Response "code = 0，表示登陆成功; code = 1000，表示没有初始密码,登陆失败"
 // @Failure      500  {object}  common.SystemError "系统错误"
 // @Router      /login [post]

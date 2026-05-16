@@ -11,6 +11,8 @@ import (
 
 var ErrAdminInfoNotFound = errors.New("admin info not found")
 
+type AdminInfo = model.AdminInfo
+
 type AdminInfoData struct {
 	db *gorm.DB
 }
@@ -20,12 +22,15 @@ func NewAdminInfoData(db *gorm.DB) *AdminInfoData {
 }
 
 // FirstActive 按 ID 升序读取第一条未删除的管理员信息。
-func (a *AdminInfoData) FirstActive(ctx context.Context) (*model.AdminInfo, error) {
+func (a *AdminInfoData) FirstActive(ctx context.Context) (*AdminInfo, error) {
 	var admin model.AdminInfo
 	err := a.db.WithContext(ctx).
 		Where("del_flag = ?", 0).
 		Order("id ASC").
 		First(&admin).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, ErrAdminInfoNotFound
+	}
 	if err != nil {
 		return nil, err
 	}
