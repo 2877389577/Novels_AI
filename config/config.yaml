@@ -7,6 +7,11 @@ server:
 rate_limit:
   requests_per_minute: 60
 
+# session 控制浏览器会话 Cookie 的签名/加密参数。
+# salt 用于 gin session cookie store，请在生产环境替换为足够长的随机字符串。
+session:
+  salt: novels-ai-session-salt
+
 # log 控制应用日志输出。
 # output:
 #   console/stdout 表示输出到控制台；

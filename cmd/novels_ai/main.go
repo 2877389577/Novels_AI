@@ -42,7 +42,7 @@ func main() {
 
 	// 初始化 HTTP 服务
 	engine := gin.New()
-	service.AddRoute(engine, config.RateLimit.RequestsPerMinute, db)
+	service.AddRoute(engine, config.RateLimit.RequestsPerMinute, config.Session.Salt, db)
 	if err := engine.Run(fmt.Sprintf("%s:%d", config.Server.Host, config.Server.Port)); err != nil {
 		slog.Error("start server failed", "error", err)
 		panic(err)
