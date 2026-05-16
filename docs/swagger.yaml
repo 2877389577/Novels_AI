@@ -85,6 +85,15 @@ definitions:
     type: object
   novel.updateNovelRequest:
     type: object
+  upload.uploadResponse:
+    properties:
+      key:
+        description: Key 文件在 S3/对象存储桶里的对象路径，相当于存储内部的文件名
+        type: string
+      url:
+        description: URL 前端可以直接访问的公开地址，是用配置里的 public_base_url 加上 key 拼出来的
+        type: string
+    type: object
 externalDocs:
   description: OpenAPI
   url: https://swagger.io/resources/open-api/
@@ -376,4 +385,42 @@ paths:
       summary: 更新小说
       tags:
       - novel
+  /upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 使用 S3 兼容对象存储上传文件，返回公开访问地址
+      parameters:
+      - description: 文件
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/upload.uploadResponse'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/common.Response'
+        "401":
+          description: 未登录
+          schema:
+            $ref: '#/definitions/common.Response'
+        "500":
+          description: 系统错误
+          schema:
+            $ref: '#/definitions/common.SystemError'
+      summary: 上传文件
+      tags:
+      - upload
 swagger: "2.0"

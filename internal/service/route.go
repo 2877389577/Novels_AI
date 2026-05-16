@@ -4,10 +4,12 @@ import (
 	docs "Novels_AI/backend/docs"
 	loginbiz "Novels_AI/backend/internal/biz/login"
 	novelbiz "Novels_AI/backend/internal/biz/novel"
+	uploadbiz "Novels_AI/backend/internal/biz/upload"
 	"Novels_AI/backend/internal/data"
 	"Novels_AI/backend/internal/middleware"
 	"Novels_AI/backend/internal/service/login"
 	novelservice "Novels_AI/backend/internal/service/novel"
+	uploadservice "Novels_AI/backend/internal/service/upload"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -34,7 +36,7 @@ import (
 
 // @externalDocs.description  OpenAPI
 // @externalDocs.url          https://swagger.io/resources/open-api/
-func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, db *gorm.DB) {
+func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, uploadConfig data.S3UploadConfig, db *gorm.DB) {
 	docs.SwaggerInfo.BasePath = "/api/v1"
 
 	// 中间件
@@ -53,6 +55,9 @@ func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, db 
 	novelData := data.NewNovelData(db)
 	novelUseCase := novelbiz.NewNovelUseCase(novelData)
 	novelService := novelservice.NewNovelService(novelUseCase)
+	s3UploadData := data.NewS3UploadData(uploadConfig)
+	uploadUseCase := uploadbiz.NewUploadUseCase(s3UploadData)
+	uploadService := uploadservice.NewUploadService(uploadUseCase)
 
 	group := engine.Group("/api/v1")
 	// 检查初始化密码接口
@@ -69,4 +74,7 @@ func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, db 
 	novelGroup.GET("/:id", novelService.Get)
 	novelGroup.PUT("/update", novelService.Update)
 	novelGroup.DELETE("/:id", novelService.Delete)
+
+	// 上传接口同样需要登录会话，避免匿名用户写入对象存储。
+	group.POST("/upload", middleware.SessionAuth(), uploadService.Upload)
 }

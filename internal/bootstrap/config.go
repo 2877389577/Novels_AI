@@ -15,6 +15,8 @@ type Config struct {
 	Session SessionConfig `mapstructure:"session" yaml:"session"`
 	// Log 保存日志服务相关配置，用于控制日志输出位置、日志级别以及文件轮转策略。
 	Log LogConfig `mapstructure:"log" yaml:"log"`
+	// Upload 保存文件上传相关配置。
+	Upload UploadConfig `mapstructure:"upload" yaml:"upload"`
 }
 
 type ServerConfig struct {
@@ -32,6 +34,32 @@ type RateLimitConfig struct {
 type SessionConfig struct {
 	// Salt 用于 gin session cookie store 的签名/加密盐。
 	Salt string `mapstructure:"salt" yaml:"salt"`
+}
+
+// UploadConfig 定义文件上传配置。
+type UploadConfig struct {
+	// S3 保存 S3 兼容对象存储配置。
+	S3 S3UploadConfig `mapstructure:"s3" yaml:"s3"`
+}
+
+// S3UploadConfig 定义 S3 兼容对象存储连接参数。
+type S3UploadConfig struct {
+	// Endpoint 是对象存储 API 地址，例如 http://localhost:9000 或 https://s3.amazonaws.com。
+	Endpoint string `mapstructure:"endpoint" yaml:"endpoint"`
+	// Region 是签名区域；S3 兼容服务通常可以使用 us-east-1。
+	Region string `mapstructure:"region" yaml:"region"`
+	// Bucket 是上传目标桶。
+	Bucket string `mapstructure:"bucket" yaml:"bucket"`
+	// AccessKeyID 是对象存储访问密钥 ID。
+	AccessKeyID string `mapstructure:"access_key_id" yaml:"access_key_id"`
+	// SecretAccessKey 是对象存储访问密钥。
+	SecretAccessKey string `mapstructure:"secret_access_key" yaml:"secret_access_key"`
+	// PublicBaseURL 是前端可直接访问的公开前缀，例如 https://cdn.example.com/bucket。
+	PublicBaseURL string `mapstructure:"public_base_url" yaml:"public_base_url"`
+	// UsePathStyle 控制是否使用 path-style 访问，MinIO 等 S3 兼容服务通常需要开启。
+	UsePathStyle bool `mapstructure:"use_path_style" yaml:"use_path_style"`
+	// Prefix 是对象 key 前缀，用于把上传文件放到固定目录下。
+	Prefix string `mapstructure:"prefix" yaml:"prefix"`
 }
 
 // LogConfig 定义日志服务的顶层配置。

@@ -2,6 +2,7 @@ package main
 
 import (
 	"Novels_AI/backend/internal/bootstrap"
+	"Novels_AI/backend/internal/data"
 	"Novels_AI/backend/internal/service"
 	"flag"
 	"fmt"
@@ -42,7 +43,16 @@ func main() {
 
 	// 初始化 HTTP 服务
 	engine := gin.New()
-	service.AddRoute(engine, config.RateLimit.RequestsPerMinute, config.Session.Salt, db)
+	service.AddRoute(engine, config.RateLimit.RequestsPerMinute, config.Session.Salt, data.S3UploadConfig{
+		Endpoint:        config.Upload.S3.Endpoint,
+		Region:          config.Upload.S3.Region,
+		Bucket:          config.Upload.S3.Bucket,
+		AccessKeyID:     config.Upload.S3.AccessKeyID,
+		SecretAccessKey: config.Upload.S3.SecretAccessKey,
+		PublicBaseURL:   config.Upload.S3.PublicBaseURL,
+		UsePathStyle:    config.Upload.S3.UsePathStyle,
+		Prefix:          config.Upload.S3.Prefix,
+	}, db)
 	if err := engine.Run(fmt.Sprintf("%s:%d", config.Server.Host, config.Server.Port)); err != nil {
 		slog.Error("start server failed", "error", err)
 		panic(err)
