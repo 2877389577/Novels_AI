@@ -144,6 +144,318 @@
                     }
                 }
             }
+        },
+        "/novels": {
+            "get": {
+                "description": "分页查询小说列表",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "novel"
+                ],
+                "summary": "查询小说列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "页码，默认 1",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页数量，默认 10，最大 100",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/novel.novelListResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "未登录",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "系统错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.SystemError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "创建小说，仅书名必填",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "novel"
+                ],
+                "summary": "新增小说",
+                "parameters": [
+                    {
+                        "description": "小说信息",
+                        "name": "novel",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/novel.createNovelRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/novel.novelResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "未登录",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "系统错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.SystemError"
+                        }
+                    }
+                }
+            }
+        },
+        "/novels/update": {
+            "put": {
+                "description": "按 ID 局部更新小说",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "novel"
+                ],
+                "summary": "更新小说",
+                "parameters": [
+                    {
+                        "description": "小说信息",
+                        "name": "novel",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/novel.updateNovelRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/novel.novelResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "未登录",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "小说不存在",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "系统错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.SystemError"
+                        }
+                    }
+                }
+            }
+        },
+        "/novels/{id}": {
+            "get": {
+                "description": "按 ID 查询单本小说",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "novel"
+                ],
+                "summary": "查询小说详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "小说 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/novel.novelResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "未登录",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "小说不存在",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "系统错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.SystemError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "按 ID 软删除小说",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "novel"
+                ],
+                "summary": "删除小说",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "小说 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "未登录",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "小说不存在",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "系统错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.SystemError"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -181,6 +493,94 @@
                     "type": "string"
                 }
             }
+        },
+        "novel.createNovelRequest": {
+            "type": "object",
+            "required": [
+                "title"
+            ],
+            "properties": {
+                "authorName": {
+                    "description": "小说作者",
+                    "type": "string"
+                },
+                "coverUrl": {
+                    "description": "小说封面 URL",
+                    "type": "string"
+                },
+                "intro": {
+                    "description": "小说简介",
+                    "type": "string"
+                },
+                "metadata": {
+                    "description": "小说元数据（标签信息）",
+                    "type": "object"
+                },
+                "title": {
+                    "description": "书名，必填",
+                    "type": "string"
+                }
+            }
+        },
+        "novel.novelListResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/novel.novelResponse"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "novel.novelResponse": {
+            "type": "object",
+            "properties": {
+                "authorName": {
+                    "description": "小说作者",
+                    "type": "string"
+                },
+                "coverUrl": {
+                    "description": "小说封面 URL",
+                    "type": "string"
+                },
+                "createdAt": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "小说 ID",
+                    "type": "integer"
+                },
+                "intro": {
+                    "description": "小说简介",
+                    "type": "string"
+                },
+                "metadata": {
+                    "description": "小说元数据（标签信息）",
+                    "type": "object"
+                },
+                "title": {
+                    "description": "书名",
+                    "type": "string"
+                },
+                "wordCount": {
+                    "description": "小说字数",
+                    "type": "integer"
+                }
+            }
+        },
+        "novel.updateNovelRequest": {
+            "type": "object"
         }
     },
     "externalDocs": {

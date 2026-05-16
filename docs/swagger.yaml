@@ -23,6 +23,68 @@ definitions:
       password:
         type: string
     type: object
+  novel.createNovelRequest:
+    properties:
+      authorName:
+        description: 小说作者
+        type: string
+      coverUrl:
+        description: 小说封面 URL
+        type: string
+      intro:
+        description: 小说简介
+        type: string
+      metadata:
+        description: 小说元数据（标签信息）
+        type: object
+      title:
+        description: 书名，必填
+        type: string
+    required:
+    - title
+    type: object
+  novel.novelListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/novel.novelResponse'
+        type: array
+      page:
+        type: integer
+      pageSize:
+        type: integer
+      total:
+        type: integer
+    type: object
+  novel.novelResponse:
+    properties:
+      authorName:
+        description: 小说作者
+        type: string
+      coverUrl:
+        description: 小说封面 URL
+        type: string
+      createdAt:
+        description: 创建时间
+        type: string
+      id:
+        description: 小说 ID
+        type: integer
+      intro:
+        description: 小说简介
+        type: string
+      metadata:
+        description: 小说元数据（标签信息）
+        type: object
+      title:
+        description: 书名
+        type: string
+      wordCount:
+        description: 小说字数
+        type: integer
+    type: object
+  novel.updateNovelRequest:
+    type: object
 externalDocs:
   description: OpenAPI
   url: https://swagger.io/resources/open-api/
@@ -120,4 +182,198 @@ paths:
       summary: 设置初始化密码
       tags:
       - login
+  /novels:
+    get:
+      description: 分页查询小说列表
+      parameters:
+      - description: 页码，默认 1
+        in: query
+        name: page
+        type: integer
+      - description: 每页数量，默认 10，最大 100
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/novel.novelListResponse'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/common.Response'
+        "401":
+          description: 未登录
+          schema:
+            $ref: '#/definitions/common.Response'
+        "500":
+          description: 系统错误
+          schema:
+            $ref: '#/definitions/common.SystemError'
+      summary: 查询小说列表
+      tags:
+      - novel
+    post:
+      consumes:
+      - application/json
+      description: 创建小说，仅书名必填
+      parameters:
+      - description: 小说信息
+        in: body
+        name: novel
+        required: true
+        schema:
+          $ref: '#/definitions/novel.createNovelRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/novel.novelResponse'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/common.Response'
+        "401":
+          description: 未登录
+          schema:
+            $ref: '#/definitions/common.Response'
+        "500":
+          description: 系统错误
+          schema:
+            $ref: '#/definitions/common.SystemError'
+      summary: 新增小说
+      tags:
+      - novel
+  /novels/{id}:
+    delete:
+      description: 按 ID 软删除小说
+      parameters:
+      - description: 小说 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/common.Response'
+        "401":
+          description: 未登录
+          schema:
+            $ref: '#/definitions/common.Response'
+        "404":
+          description: 小说不存在
+          schema:
+            $ref: '#/definitions/common.Response'
+        "500":
+          description: 系统错误
+          schema:
+            $ref: '#/definitions/common.SystemError'
+      summary: 删除小说
+      tags:
+      - novel
+    get:
+      description: 按 ID 查询单本小说
+      parameters:
+      - description: 小说 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/novel.novelResponse'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/common.Response'
+        "401":
+          description: 未登录
+          schema:
+            $ref: '#/definitions/common.Response'
+        "404":
+          description: 小说不存在
+          schema:
+            $ref: '#/definitions/common.Response'
+        "500":
+          description: 系统错误
+          schema:
+            $ref: '#/definitions/common.SystemError'
+      summary: 查询小说详情
+      tags:
+      - novel
+  /novels/update:
+    put:
+      consumes:
+      - application/json
+      description: 按 ID 局部更新小说
+      parameters:
+      - description: 小说信息
+        in: body
+        name: novel
+        required: true
+        schema:
+          $ref: '#/definitions/novel.updateNovelRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/novel.novelResponse'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/common.Response'
+        "401":
+          description: 未登录
+          schema:
+            $ref: '#/definitions/common.Response'
+        "404":
+          description: 小说不存在
+          schema:
+            $ref: '#/definitions/common.Response'
+        "500":
+          description: 系统错误
+          schema:
+            $ref: '#/definitions/common.SystemError'
+      summary: 更新小说
+      tags:
+      - novel
 swagger: "2.0"
