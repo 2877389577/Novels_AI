@@ -54,5 +54,12 @@ var (
 )
 
 var (
+	// CharacterNameRequired 表示角色名缺失，角色名是角色资料中唯一强制要求的业务字段。
+	CharacterNameRequired = NewHTTPError(http.StatusBadRequest, 5000, "角色名称不能为空")
+	// CharacterNotFound 表示当前小说下没有找到指定角色，避免跨小说误操作其他角色。
+	CharacterNotFound = NewHTTPError(http.StatusNotFound, 5001, "角色不存在")
+)
+
+var (
 	InvalidRequest = NewHTTPError(http.StatusBadRequest, 2000, "请求参数错误")
 )
