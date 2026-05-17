@@ -55,6 +55,9 @@ func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, upl
 	novelData := data.NewNovelData(db)
 	novelUseCase := novelbiz.NewNovelUseCase(novelData)
 	novelService := novelservice.NewNovelService(novelUseCase)
+	chapterData := data.NewChapterData(db)
+	chapterUseCase := novelbiz.NewChapterUseCase(novelData, chapterData)
+	chapterService := novelservice.NewChapterService(chapterUseCase)
 	s3UploadData := data.NewS3UploadData(uploadConfig)
 	uploadUseCase := uploadbiz.NewUploadUseCase(s3UploadData)
 	uploadService := uploadservice.NewUploadService(uploadUseCase)
@@ -74,6 +77,11 @@ func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, upl
 	novelGroup.GET("/:id", novelService.Get)
 	novelGroup.PUT("/update", novelService.Update)
 	novelGroup.DELETE("/:id", novelService.Delete)
+	novelGroup.POST("/:id/chapters", chapterService.Create)
+	novelGroup.GET("/:id/chapters", chapterService.List)
+	novelGroup.GET("/:id/chapters/:chapterId", chapterService.Get)
+	novelGroup.PUT("/:id/chapters/:chapterId", chapterService.Update)
+	novelGroup.DELETE("/:id/chapters/:chapterId", chapterService.Delete)
 
 	// 上传接口同样需要登录会话，避免匿名用户写入对象存储。
 	group.POST("/upload", middleware.SessionAuth(), uploadService.Upload)

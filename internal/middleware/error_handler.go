@@ -16,16 +16,17 @@ func ErrorHandler() gin.HandlerFunc {
 		if len(c.Errors) > 0 {
 			err := c.Errors.Last().Err
 			if systemErr, ok := errors.AsType[*common.SystemError](err); ok {
-				c.JSON(http.StatusInternalServerError, &common.Response{
+				c.JSON(systemErr.StatusCode(), &common.Response{
 					Code: systemErr.Code,
 					Msg:  systemErr.Msg,
 				})
-			} else {
-				c.JSON(http.StatusInternalServerError, &common.Response{
-					Code: 500,
-					Msg:  err.Error(),
-				})
+				return
 			}
+
+			c.JSON(http.StatusInternalServerError, &common.Response{
+				Code: 500,
+				Msg:  err.Error(),
+			})
 		}
 	}
 }

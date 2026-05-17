@@ -2,14 +2,15 @@ package data
 
 import (
 	"context"
-	"errors"
 
 	"Novels_AI/backend/internal/data/model"
+	"Novels_AI/backend/internal/pkg/common"
 
 	"gorm.io/gorm"
 )
 
-var ErrNovelNotFound = errors.New("novel not found")
+// ErrNovelNotFound 复用公共业务错误，保证 service 通过 gin.Context.Error 交给中间件后仍能返回 404。
+var ErrNovelNotFound = common.NovelNotFound
 
 type Novel = model.Novel
 
