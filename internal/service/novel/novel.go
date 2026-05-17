@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -234,7 +233,6 @@ func (service *NovelService) Get(c *gin.Context) {
 func (service *NovelService) Update(c *gin.Context) {
 	var request updateNovelRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
-		fmt.Println(err)
 		_ = c.Error(common.InvalidRequest)
 		return
 	}
