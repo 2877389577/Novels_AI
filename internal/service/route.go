@@ -52,12 +52,21 @@ func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, upl
 	adminInfoData := data.NewAdminInfoData(db)
 	loginUseCase := loginbiz.NewLoginUseCase(adminInfoData)
 	loginService := login.NewLoginService(loginUseCase)
+
+	// 小说相关接口
 	novelData := data.NewNovelData(db)
 	novelUseCase := novelbiz.NewNovelUseCase(novelData)
 	novelService := novelservice.NewNovelService(novelUseCase)
+	// 章节相关接口
 	chapterData := data.NewChapterData(db)
 	chapterUseCase := novelbiz.NewChapterUseCase(novelData, chapterData)
 	chapterService := novelservice.NewChapterService(chapterUseCase)
+	// 角色相关接口
+	characterData := data.NewCharacterData(db)
+	characterUseCase := novelbiz.NewCharacterUseCase(novelData, characterData)
+	characterService := novelservice.NewCharacterService(characterUseCase)
+
+	// 上传相关接口
 	s3UploadData := data.NewS3UploadData(uploadConfig)
 	uploadUseCase := uploadbiz.NewUploadUseCase(s3UploadData)
 	uploadService := uploadservice.NewUploadService(uploadUseCase)
@@ -82,6 +91,11 @@ func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, upl
 	novelGroup.GET("/:id/chapters/:chapterId", chapterService.Get)
 	novelGroup.PUT("/:id/chapters/:chapterId", chapterService.Update)
 	novelGroup.DELETE("/:id/chapters/:chapterId", chapterService.Delete)
+	novelGroup.POST("/:id/characters", characterService.Create)
+	novelGroup.GET("/:id/characters", characterService.List)
+	novelGroup.GET("/:id/characters/:characterId", characterService.Get)
+	novelGroup.PUT("/:id/characters/:characterId", characterService.Update)
+	novelGroup.DELETE("/:id/characters/:characterId", characterService.Delete)
 
 	// 上传接口同样需要登录会话，避免匿名用户写入对象存储。
 	group.POST("/upload", middleware.SessionAuth(), uploadService.Upload)

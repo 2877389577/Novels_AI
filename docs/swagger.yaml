@@ -89,6 +89,95 @@ definitions:
         description: 章节字数
         type: integer
     type: object
+  novel.characterListItemResponse:
+    properties:
+      appearanceImgUrl:
+        description: 角色形象图 URL
+        type: string
+      charactersTags:
+        description: 角色标签
+        items:
+          type: string
+        type: array
+      gender:
+        description: 角色性别
+        type: string
+      name:
+        description: 角色名称
+        type: string
+      status:
+        description: 角色状态：1 在线，2 下线
+        type: integer
+    type: object
+  novel.characterListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/novel.characterListItemResponse'
+        type: array
+      page:
+        type: integer
+      pageSize:
+        type: integer
+      total:
+        type: integer
+    type: object
+  novel.characterResponse:
+    properties:
+      ability:
+        description: 角色能力
+        type: string
+      appearance:
+        description: 角色外貌
+        type: string
+      appearanceImgUrl:
+        description: 角色形象图 URL
+        type: string
+      background:
+        description: 角色背景
+        type: string
+      charactersTags:
+        description: 角色标签
+        items:
+          type: string
+        type: array
+      createdAt:
+        description: 创建时间
+        type: string
+      firstAppearanceChapterId:
+        description: 首次出现章节 ID
+        type: integer
+      gender:
+        description: 角色性别
+        type: string
+      id:
+        description: 角色 ID
+        type: integer
+      intro:
+        description: 角色介绍
+        type: string
+      motivation:
+        description: 角色动机
+        type: string
+      name:
+        description: 角色名称
+        type: string
+      novelId:
+        description: 小说 ID
+        type: integer
+      personality:
+        description: 角色性格
+        type: string
+      plotDirection:
+        description: 角色剧情方向
+        type: string
+      status:
+        description: 角色状态：1 在线，2 下线
+        type: integer
+      updatedAt:
+        description: 更新时间
+        type: string
+    type: object
   novel.createChapterRequest:
     properties:
       chapterNo:
@@ -108,6 +197,52 @@ definitions:
     - content
     - title
     - wordCount
+    type: object
+  novel.createCharacterRequest:
+    properties:
+      ability:
+        description: 角色能力
+        type: string
+      appearance:
+        description: 角色外貌
+        type: string
+      appearanceImgUrl:
+        description: 角色形象图 URL
+        type: string
+      background:
+        description: 角色背景
+        type: string
+      charactersTags:
+        description: 角色标签
+        items:
+          type: string
+        type: array
+      firstAppearanceChapterId:
+        description: 首次出现章节 ID
+        type: integer
+      gender:
+        description: 角色性别
+        type: string
+      intro:
+        description: 角色介绍
+        type: string
+      motivation:
+        description: 角色动机
+        type: string
+      name:
+        description: 角色名称，必填
+        type: string
+      personality:
+        description: 角色性格
+        type: string
+      plotDirection:
+        description: 角色剧情方向
+        type: string
+      status:
+        description: 角色状态：1 在线，2 下线
+        type: integer
+    required:
+    - name
     type: object
   novel.createNovelRequest:
     properties:
@@ -187,6 +322,50 @@ definitions:
         type: string
       wordCount:
         description: 章节字数
+        type: integer
+    type: object
+  novel.updateCharacterRequest:
+    properties:
+      ability:
+        description: 角色能力
+        type: string
+      appearance:
+        description: 角色外貌
+        type: string
+      appearanceImgUrl:
+        description: 角色形象图 URL
+        type: string
+      background:
+        description: 角色背景
+        type: string
+      charactersTags:
+        description: 角色标签；使用指针用于区分“未传”和“传空数组”
+        items:
+          type: string
+        type: array
+      firstAppearanceChapterId:
+        description: 首次出现章节 ID
+        type: integer
+      gender:
+        description: 角色性别
+        type: string
+      intro:
+        description: 角色介绍
+        type: string
+      motivation:
+        description: 角色动机
+        type: string
+      name:
+        description: 角色名称
+        type: string
+      personality:
+        description: 角色性格
+        type: string
+      plotDirection:
+        description: 角色剧情方向
+        type: string
+      status:
+        description: 角色状态：1 在线，2 下线
         type: integer
     type: object
   novel.updateNovelRequest:
@@ -727,6 +906,237 @@ paths:
       summary: 查询下一章编号
       tags:
       - chapter
+  /novels/{id}/characters:
+    get:
+      description: 分页查询指定小说的角色列表，列表只返回角色名、性别、图像 URL、状态和标签
+      parameters:
+      - description: 小说 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 页码，默认 1
+        in: query
+        name: page
+        type: integer
+      - description: 每页数量，默认 10，最大 100
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/novel.characterListResponse'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/common.Response'
+        "401":
+          description: 未登录
+          schema:
+            $ref: '#/definitions/common.Response'
+        "404":
+          description: 小说不存在
+          schema:
+            $ref: '#/definitions/common.Response'
+        "500":
+          description: 系统错误
+          schema:
+            $ref: '#/definitions/common.SystemError'
+      summary: 查询角色列表
+      tags:
+      - character
+    post:
+      consumes:
+      - application/json
+      description: 给指定小说新增角色资料
+      parameters:
+      - description: 小说 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 角色信息
+        in: body
+        name: character
+        required: true
+        schema:
+          $ref: '#/definitions/novel.createCharacterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/novel.characterResponse'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/common.Response'
+        "401":
+          description: 未登录
+          schema:
+            $ref: '#/definitions/common.Response'
+        "404":
+          description: 小说不存在
+          schema:
+            $ref: '#/definitions/common.Response'
+        "500":
+          description: 系统错误
+          schema:
+            $ref: '#/definitions/common.SystemError'
+      summary: 新增角色
+      tags:
+      - character
+  /novels/{id}/characters/{characterId}:
+    delete:
+      description: 软删除指定小说下的角色
+      parameters:
+      - description: 小说 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 角色 ID
+        in: path
+        name: characterId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/common.Response'
+        "401":
+          description: 未登录
+          schema:
+            $ref: '#/definitions/common.Response'
+        "404":
+          description: 角色不存在
+          schema:
+            $ref: '#/definitions/common.Response'
+        "500":
+          description: 系统错误
+          schema:
+            $ref: '#/definitions/common.SystemError'
+      summary: 删除角色
+      tags:
+      - character
+    get:
+      description: 查询指定小说下的角色完整资料
+      parameters:
+      - description: 小说 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 角色 ID
+        in: path
+        name: characterId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/novel.characterResponse'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/common.Response'
+        "401":
+          description: 未登录
+          schema:
+            $ref: '#/definitions/common.Response'
+        "404":
+          description: 角色不存在
+          schema:
+            $ref: '#/definitions/common.Response'
+        "500":
+          description: 系统错误
+          schema:
+            $ref: '#/definitions/common.SystemError'
+      summary: 查询角色详情
+      tags:
+      - character
+    put:
+      consumes:
+      - application/json
+      description: 局部更新指定小说下的角色资料
+      parameters:
+      - description: 小说 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 角色 ID
+        in: path
+        name: characterId
+        required: true
+        type: integer
+      - description: 角色信息
+        in: body
+        name: character
+        required: true
+        schema:
+          $ref: '#/definitions/novel.updateCharacterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/novel.characterResponse'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/common.Response'
+        "401":
+          description: 未登录
+          schema:
+            $ref: '#/definitions/common.Response'
+        "404":
+          description: 角色不存在
+          schema:
+            $ref: '#/definitions/common.Response'
+        "500":
+          description: 系统错误
+          schema:
+            $ref: '#/definitions/common.SystemError'
+      summary: 修改角色
+      tags:
+      - character
   /novels/update:
     put:
       consumes:
