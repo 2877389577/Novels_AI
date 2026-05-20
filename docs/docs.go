@@ -1477,6 +1477,10 @@ const docTemplate = `{
                     "description": "角色性别",
                     "type": "string"
                 },
+                "id": {
+                    "description": "角色 ID",
+                    "type": "integer"
+                },
                 "name": {
                     "description": "角色名称",
                     "type": "string"
