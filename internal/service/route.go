@@ -2,11 +2,13 @@ package service
 
 import (
 	docs "Novels_AI/backend/docs"
+	aiproviderbiz "Novels_AI/backend/internal/biz/aiprovider"
 	loginbiz "Novels_AI/backend/internal/biz/login"
 	novelbiz "Novels_AI/backend/internal/biz/novel"
 	uploadbiz "Novels_AI/backend/internal/biz/upload"
 	"Novels_AI/backend/internal/data"
 	"Novels_AI/backend/internal/middleware"
+	aiproviderservice "Novels_AI/backend/internal/service/aiprovider"
 	"Novels_AI/backend/internal/service/login"
 	novelservice "Novels_AI/backend/internal/service/novel"
 	uploadservice "Novels_AI/backend/internal/service/upload"
@@ -36,7 +38,7 @@ import (
 
 // @externalDocs.description  OpenAPI
 // @externalDocs.url          https://swagger.io/resources/open-api/
-func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, uploadConfig data.S3UploadConfig, db *gorm.DB) {
+func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, uploadConfig data.S3UploadConfig, apiKeyCipher aiproviderbiz.APIKeyCipher, db *gorm.DB) {
 	docs.SwaggerInfo.BasePath = "/api/v1"
 
 	// 中间件
@@ -65,6 +67,11 @@ func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, upl
 	characterData := data.NewCharacterData(db)
 	characterUseCase := novelbiz.NewCharacterUseCase(novelData, characterData)
 	characterService := novelservice.NewCharacterService(characterUseCase)
+
+	// AI 提供商相关接口
+	aiProviderData := data.NewAIProviderData(db)
+	aiProviderUseCase := aiproviderbiz.NewAIProviderUseCase(aiProviderData, apiKeyCipher)
+	aiProviderService := aiproviderservice.NewAIProviderService(aiProviderUseCase)
 
 	// 上传相关接口
 	s3UploadData := data.NewS3UploadData(uploadConfig)
@@ -96,6 +103,14 @@ func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, upl
 	novelGroup.GET("/:id/characters/:characterId", characterService.Get)
 	novelGroup.PUT("/:id/characters/:characterId", characterService.Update)
 	novelGroup.DELETE("/:id/characters/:characterId", characterService.Delete)
+
+	// AI 提供商接口需要登录会话，避免匿名用户读取或维护模型密钥。
+	aiProviderGroup := group.Group("/ai-providers", middleware.SessionAuth())
+	aiProviderGroup.POST("", aiProviderService.Create)
+	aiProviderGroup.GET("", aiProviderService.List)
+	aiProviderGroup.GET("/:id", aiProviderService.Get)
+	aiProviderGroup.PUT("/:id", aiProviderService.Update)
+	aiProviderGroup.DELETE("/:id", aiProviderService.Delete)
 
 	// 上传接口同样需要登录会话，避免匿名用户写入对象存储。
 	group.POST("/upload", middleware.SessionAuth(), uploadService.Upload)

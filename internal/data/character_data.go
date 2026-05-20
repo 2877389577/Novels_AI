@@ -44,7 +44,7 @@ func (d *CharacterData) List(ctx context.Context, novelID int64, offset, limit i
 
 	var characters []Character
 	err = d.db.WithContext(ctx).
-		Select("name, gender, appearance_img_url, status, characters_tags").
+		Select("id, name, gender, appearance_img_url, status, characters_tags").
 		Where("novel_id = ?", novelID).
 		Order("id DESC").
 		Offset(offset).

@@ -54,7 +54,7 @@ type updateNovelRequest struct {
 	// 小说封面 URL
 	CoverURL *string `json:"coverUrl"`
 	// 小说元数据（标签信息）
-	Metadata rawJSONField `json:"metadata" swaggertype:"object" example:"{\"key\":\"value\"}"`
+	Metadata rawJSONField `json:"metadata" swaggertype:"object"`
 }
 
 type rawJSONField struct {

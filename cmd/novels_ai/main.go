@@ -3,6 +3,7 @@ package main
 import (
 	"Novels_AI/backend/internal/bootstrap"
 	"Novels_AI/backend/internal/data"
+	"Novels_AI/backend/internal/pkg/common"
 	"Novels_AI/backend/internal/service"
 	"flag"
 	"fmt"
@@ -34,6 +35,13 @@ func main() {
 	// 后续代码可以直接使用 slog.Info/slog.Error 等包级函数，不需要层层传递 logger。
 	slog.SetDefault(logger)
 
+	// 初始化 AI 提供商 API Key 加解密器，配置缺失时直接阻止服务启动。
+	apiKeyCrypto, err := common.NewAPIKeyCrypto(config.AIProvider.Crypto.Secret, config.AIProvider.Crypto.Salt)
+	if err != nil {
+		slog.Error("init ai provider api key crypto failed", "error", err)
+		os.Exit(1)
+	}
+
 	// 初始化数据库
 	db, err := bootstrap.NewDB(config.System.Postgres)
 	if err != nil {
@@ -52,7 +60,7 @@ func main() {
 		PublicBaseURL:   config.Upload.S3.PublicBaseURL,
 		UsePathStyle:    config.Upload.S3.UsePathStyle,
 		Prefix:          config.Upload.S3.Prefix,
-	}, db)
+	}, apiKeyCrypto, db)
 	if err := engine.Run(fmt.Sprintf("%s:%d", config.Server.Host, config.Server.Port)); err != nil {
 		slog.Error("start server failed", "error", err)
 		panic(err)

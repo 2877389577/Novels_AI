@@ -61,5 +61,20 @@ var (
 )
 
 var (
+	// AIProviderNameRequired 表示 AI 提供商名称缺失。
+	AIProviderNameRequired = NewHTTPError(http.StatusBadRequest, 6000, "AI提供商名称不能为空")
+	// AIProviderTypeRequired 表示 AI 提供商类型缺失。
+	AIProviderTypeRequired = NewHTTPError(http.StatusBadRequest, 6001, "AI提供商类型不能为空")
+	// AIProviderBaseURLRequired 表示 AI 提供商基础 URL 缺失。
+	AIProviderBaseURLRequired = NewHTTPError(http.StatusBadRequest, 6002, "AI提供商基础URL不能为空")
+	// AIProviderAPIKeyRequired 表示 AI 提供商 API Key 缺失。
+	AIProviderAPIKeyRequired = NewHTTPError(http.StatusBadRequest, 6003, "AI提供商API密钥不能为空")
+	// AIProviderNotFound 表示没有找到指定 AI 提供商。
+	AIProviderNotFound = NewHTTPError(http.StatusNotFound, 6004, "AI提供商不存在")
+	// AIProviderAPIKeyDecryptFailed 表示已入库密钥无法按当前配置解密。
+	AIProviderAPIKeyDecryptFailed = NewHTTPError(http.StatusInternalServerError, 6005, "AI提供商API密钥解密失败")
+)
+
+var (
 	InvalidRequest = NewHTTPError(http.StatusBadRequest, 2000, "请求参数错误")
 )

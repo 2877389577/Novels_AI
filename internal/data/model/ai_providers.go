@@ -1,0 +1,34 @@
+package model
+
+import (
+	"time"
+
+	"gorm.io/datatypes"
+)
+
+// AIProvider AI提供商表
+type AIProvider struct {
+	ID int64 `gorm:"column:id;primaryKey;autoIncrement;comment:主键ID" json:"id"`
+
+	Name string `gorm:"column:name;type:varchar(100);not null;comment:AI名称" json:"name"`
+
+	ProviderType string `gorm:"column:provider_type;type:varchar(50);not null;comment:AI提供商类型" json:"provider_type"`
+
+	BaseURL string `gorm:"column:base_url;not null;type:text;comment:AI基础URL" json:"base_url"`
+
+	APIKeyEncrypted string `gorm:"column:api_key_encrypted;not null;type:text;comment:加密后的API密钥" json:"api_key_encrypted"`
+
+	IsEnabled bool `gorm:"column:is_enabled;not null;default:true;comment:是否启用" json:"is_enabled"`
+
+	Priority int `gorm:"column:priority;not null;default:100;comment:优先级" json:"priority"`
+
+	ConfigJSON datatypes.JSON `gorm:"column:config_json;type:jsonb;not null;default:'{}';comment:配置JSON" json:"config_json"`
+
+	CreatedAt time.Time `gorm:"column:created_at;not null;default:now();comment:创建时间" json:"created_at"`
+
+	UpdatedAt time.Time `gorm:"column:updated_at;not null;default:now();comment:更新时间" json:"updated_at"`
+}
+
+func (AIProvider) TableName() string {
+	return "ai_providers"
+}

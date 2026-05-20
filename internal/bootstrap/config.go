@@ -17,6 +17,8 @@ type Config struct {
 	Log LogConfig `mapstructure:"log" yaml:"log"`
 	// Upload 保存文件上传相关配置。
 	Upload UploadConfig `mapstructure:"upload" yaml:"upload"`
+	// AIProvider 保存 AI 提供商管理相关配置。
+	AIProvider AIProviderConfig `mapstructure:"ai_provider" yaml:"ai_provider"`
 }
 
 type ServerConfig struct {
@@ -60,6 +62,20 @@ type S3UploadConfig struct {
 	UsePathStyle bool `mapstructure:"use_path_style" yaml:"use_path_style"`
 	// Prefix 是对象 key 前缀，用于把上传文件放到固定目录下。
 	Prefix string `mapstructure:"prefix" yaml:"prefix"`
+}
+
+// AIProviderConfig 定义 AI 提供商管理模块配置。
+type AIProviderConfig struct {
+	// Crypto 保存 API Key 可逆加密所需的密钥材料。
+	Crypto AIProviderCryptoConfig `mapstructure:"crypto" yaml:"crypto"`
+}
+
+// AIProviderCryptoConfig 定义 API Key 加密密钥派生参数。
+type AIProviderCryptoConfig struct {
+	// Secret 是参与派生 AES 密钥的主密钥，生产环境必须替换为随机长字符串。
+	Secret string `mapstructure:"secret" yaml:"secret"`
+	// Salt 是 PBKDF2 派生密钥使用的盐，生产环境必须替换为随机字符串。
+	Salt string `mapstructure:"salt" yaml:"salt"`
 }
 
 // LogConfig 定义日志服务的顶层配置。
