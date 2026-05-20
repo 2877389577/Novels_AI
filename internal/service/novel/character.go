@@ -121,6 +121,8 @@ type characterResponse struct {
 }
 
 type characterListItemResponse struct {
+	// 角色 ID
+	ID uint `json:"id"`
 	// 角色名称
 	Name string `json:"name"`
 	// 角色性别
@@ -443,6 +445,7 @@ func toCharacterResponse(character *novelbiz.Character) characterResponse {
 // toCharacterListItemResponse 将业务角色模型转换成列表摘要，只保留用户要求的五类角色信息。
 func toCharacterListItemResponse(character *novelbiz.Character) characterListItemResponse {
 	return characterListItemResponse{
+		ID:               character.ID,
 		Name:             character.Name,
 		Gender:           character.Gender,
 		AppearanceImgURL: character.AppearanceImgURL,
