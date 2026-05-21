@@ -150,6 +150,76 @@ const docTemplate = `{
                 }
             }
         },
+        "/ai-providers/models/query": {
+            "post": {
+                "description": "使用前端传入的 baseUrl 和 apiKey，按 OpenAI 兼容 /v1/models 协议查询模型 ID 列表；不会写入数据库",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ai-provider"
+                ],
+                "summary": "查询 AI 提供商模型列表",
+                "parameters": [
+                    {
+                        "description": "AI 提供商连接信息",
+                        "name": "provider",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/aiprovider.queryAIProviderModelsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/aiprovider.aiProviderModelsResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "未登录",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "系统错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.SystemError"
+                        }
+                    },
+                    "502": {
+                        "description": "AI 提供商模型查询失败",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/ai-providers/{id}": {
             "get": {
                 "description": "按 ID 查询 AI 提供商详情，返回解密后的 API Key",
@@ -1669,6 +1739,18 @@ const docTemplate = `{
                 }
             }
         },
+        "aiprovider.aiProviderModelsResponse": {
+            "type": "object",
+            "properties": {
+                "models": {
+                    "description": "支持的模型 ID 列表",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "aiprovider.aiProviderResponse": {
             "type": "object",
             "properties": {
@@ -1695,6 +1777,13 @@ const docTemplate = `{
                 "isEnabled": {
                     "description": "是否启用",
                     "type": "boolean"
+                },
+                "models": {
+                    "description": "支持的模型列表",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "name": {
                     "description": "AI 提供商名称",
@@ -1739,6 +1828,13 @@ const docTemplate = `{
                     "description": "是否启用；不传时默认 true",
                     "type": "boolean"
                 },
+                "models": {
+                    "description": "支持的模型列表",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "name": {
                     "description": "AI 提供商名称，必填",
                     "type": "string"
@@ -1749,6 +1845,23 @@ const docTemplate = `{
                 },
                 "providerType": {
                     "description": "AI 提供商类型，必填",
+                    "type": "string"
+                }
+            }
+        },
+        "aiprovider.queryAIProviderModelsRequest": {
+            "type": "object",
+            "required": [
+                "apiKey",
+                "baseUrl"
+            ],
+            "properties": {
+                "apiKey": {
+                    "description": "API Key 明文，仅用于本次上游查询，不入库也不返回。",
+                    "type": "string"
+                },
+                "baseUrl": {
+                    "description": "AI 提供商基础 URL，后端会按 OpenAI 兼容协议拼接到 /v1/models。",
                     "type": "string"
                 }
             }
@@ -1771,6 +1884,13 @@ const docTemplate = `{
                 "isEnabled": {
                     "description": "是否启用",
                     "type": "boolean"
+                },
+                "models": {
+                    "description": "支持的模型列表；使用指针区分“未传”和“传空数组”",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "name": {
                     "description": "AI 提供商名称",

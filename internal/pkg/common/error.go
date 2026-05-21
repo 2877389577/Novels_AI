@@ -73,6 +73,8 @@ var (
 	AIProviderNotFound = NewHTTPError(http.StatusNotFound, 6004, "AI提供商不存在")
 	// AIProviderAPIKeyDecryptFailed 表示已入库密钥无法按当前配置解密。
 	AIProviderAPIKeyDecryptFailed = NewHTTPError(http.StatusInternalServerError, 6005, "AI提供商API密钥解密失败")
+	// AIProviderModelsQueryFailed 表示按 OpenAI 兼容协议查询模型列表失败。
+	AIProviderModelsQueryFailed = NewHTTPError(http.StatusBadGateway, 6006, "AI提供商模型查询失败")
 )
 
 var (

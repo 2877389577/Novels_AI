@@ -107,6 +107,7 @@ func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, upl
 	// AI 提供商接口需要登录会话，避免匿名用户读取或维护模型密钥。
 	aiProviderGroup := group.Group("/ai-providers", middleware.SessionAuth())
 	aiProviderGroup.POST("", aiProviderService.Create)
+	aiProviderGroup.POST("/models/query", aiProviderService.QueryModels)
 	aiProviderGroup.GET("", aiProviderService.List)
 	aiProviderGroup.GET("/:id", aiProviderService.Get)
 	aiProviderGroup.PUT("/:id", aiProviderService.Update)

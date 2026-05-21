@@ -3,6 +3,7 @@ package model
 import (
 	"time"
 
+	"github.com/lib/pq"
 	"gorm.io/datatypes"
 )
 
@@ -23,6 +24,8 @@ type AIProvider struct {
 	Priority int `gorm:"column:priority;not null;default:100;comment:优先级" json:"priority"`
 
 	ConfigJSON datatypes.JSON `gorm:"column:config_json;type:jsonb;not null;default:'{}';comment:配置JSON" json:"config_json"`
+
+	Models pq.StringArray `gorm:"column:models;type:text;comment:支持的模型列表" json:"models"`
 
 	CreatedAt time.Time `gorm:"column:created_at;not null;default:now();comment:创建时间" json:"created_at"`
 
