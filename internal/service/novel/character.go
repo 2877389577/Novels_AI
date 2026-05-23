@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	novelbiz "Novels_AI/backend/internal/biz/novel"
+	"Novels_AI/backend/internal/data/dto"
 	"Novels_AI/backend/internal/pkg/common"
 
 	"github.com/gin-gonic/gin"
@@ -18,69 +19,11 @@ type CharacterService struct {
 
 // CharacterUseCase 描述角色 service 依赖的业务能力，便于测试时替换为轻量实现。
 type CharacterUseCase interface {
-	CreateCharacter(ctx context.Context, params novelbiz.CreateCharacterParams) (*novelbiz.Character, error)
+	CreateCharacter(ctx context.Context, params dto.CreateCharacterRequest) (*novelbiz.Character, error)
 	ListCharacters(ctx context.Context, novelID int64, page, pageSize int) (*novelbiz.ListCharacterResult, error)
 	GetCharacter(ctx context.Context, novelID int64, characterID uint) (*novelbiz.Character, error)
-	UpdateCharacter(ctx context.Context, params novelbiz.UpdateCharacterParams) (*novelbiz.Character, error)
+	UpdateCharacter(ctx context.Context, params dto.UpdateCharacterRequest) (*novelbiz.Character, error)
 	DeleteCharacter(ctx context.Context, novelID int64, characterID uint) error
-}
-
-type createCharacterRequest struct {
-	// 角色名称，必填
-	Name string `json:"name" binding:"required"`
-	// 角色性别
-	Gender string `json:"gender"`
-	// 角色介绍
-	Intro string `json:"intro"`
-	// 角色性格
-	Personality string `json:"personality"`
-	// 角色外貌
-	Appearance string `json:"appearance"`
-	// 角色背景
-	Background string `json:"background"`
-	// 角色能力
-	Ability string `json:"ability"`
-	// 角色动机
-	Motivation string `json:"motivation"`
-	// 角色剧情方向
-	PlotDirection string `json:"plotDirection"`
-	// 首次出现章节 ID
-	FirstAppearanceChapterID *int64 `json:"firstAppearanceChapterId"`
-	// 角色形象图 URL
-	AppearanceImgURL string `json:"appearanceImgUrl"`
-	// 角色状态：1 在线，2 下线
-	Status *int16 `json:"status"`
-	// 角色标签
-	CharactersTags []string `json:"charactersTags"`
-}
-
-type updateCharacterRequest struct {
-	// 角色名称
-	Name *string `json:"name"`
-	// 角色性别
-	Gender *string `json:"gender"`
-	// 角色介绍
-	Intro *string `json:"intro"`
-	// 角色性格
-	Personality *string `json:"personality"`
-	// 角色外貌
-	Appearance *string `json:"appearance"`
-	// 角色背景
-	Background *string `json:"background"`
-	// 角色能力
-	Ability *string `json:"ability"`
-	// 角色动机
-	Motivation *string `json:"motivation"`
-	// 角色剧情方向
-	PlotDirection *string `json:"plotDirection"`
-	// 首次出现章节 ID
-	FirstAppearanceChapterID *int64 `json:"firstAppearanceChapterId"`
-	// 角色形象图 URL
-	AppearanceImgURL *string `json:"appearanceImgUrl"`
-	// 角色状态：1 在线，2 下线
-	Status *int16 `json:"status"`
-	// 角色标签；使用指针用于区分“未传”和“传空数组”
-	CharactersTags *[]string `json:"charactersTags"`
 }
 
 type characterResponse struct {
@@ -154,7 +97,7 @@ func NewCharacterService(useCase CharacterUseCase) *CharacterService {
 // @Accept json
 // @Produce json
 // @Param id path int true "小说 ID"
-// @Param character body createCharacterRequest true "角色信息"
+// @Param character body dto.CreateCharacterRequest true "角色信息"
 // @Success 200 {object} common.Response{data=characterResponse}
 // @Failure 400 {object} common.Response "请求参数错误"
 // @Failure 401 {object} common.Response "未登录"
@@ -167,28 +110,14 @@ func (service *CharacterService) Create(c *gin.Context) {
 		return
 	}
 
-	var request createCharacterRequest
+	var request dto.CreateCharacterRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		_ = c.Error(common.InvalidRequest)
 		return
 	}
+	request.NovelID = novelID
 
-	character, err := service.useCase.CreateCharacter(c.Request.Context(), novelbiz.CreateCharacterParams{
-		NovelID:                  novelID,
-		Name:                     request.Name,
-		Gender:                   request.Gender,
-		Intro:                    request.Intro,
-		Personality:              request.Personality,
-		Appearance:               request.Appearance,
-		Background:               request.Background,
-		Ability:                  request.Ability,
-		Motivation:               request.Motivation,
-		PlotDirection:            request.PlotDirection,
-		FirstAppearanceChapterID: request.FirstAppearanceChapterID,
-		AppearanceImgURL:         request.AppearanceImgURL,
-		Status:                   request.Status,
-		CharactersTags:           request.CharactersTags,
-	})
+	character, err := service.useCase.CreateCharacter(c.Request.Context(), request)
 	if err != nil {
 		_ = c.Error(err)
 		return
@@ -283,13 +212,13 @@ func (service *CharacterService) Get(c *gin.Context) {
 
 // Update 修改角色
 // @Summary 修改角色
-// @Description 局部更新指定小说下的角色资料
+// @Description 全量更新指定小说下的角色资料
 // @Tags character
 // @Accept json
 // @Produce json
 // @Param id path int true "小说 ID"
 // @Param characterId path int true "角色 ID"
-// @Param character body updateCharacterRequest true "角色信息"
+// @Param character body dto.UpdateCharacterRequest true "角色信息"
 // @Success 200 {object} common.Response{data=characterResponse}
 // @Failure 400 {object} common.Response "请求参数错误"
 // @Failure 401 {object} common.Response "未登录"
@@ -302,29 +231,15 @@ func (service *CharacterService) Update(c *gin.Context) {
 		return
 	}
 
-	var request updateCharacterRequest
+	var request dto.UpdateCharacterRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		_ = c.Error(common.InvalidRequest)
 		return
 	}
+	request.NovelID = novelID
+	request.CharacterID = characterID
 
-	character, err := service.useCase.UpdateCharacter(c.Request.Context(), novelbiz.UpdateCharacterParams{
-		NovelID:                  novelID,
-		CharacterID:              characterID,
-		Name:                     request.Name,
-		Gender:                   request.Gender,
-		Intro:                    request.Intro,
-		Personality:              request.Personality,
-		Appearance:               request.Appearance,
-		Background:               request.Background,
-		Ability:                  request.Ability,
-		Motivation:               request.Motivation,
-		PlotDirection:            request.PlotDirection,
-		FirstAppearanceChapterID: request.FirstAppearanceChapterID,
-		AppearanceImgURL:         request.AppearanceImgURL,
-		Status:                   request.Status,
-		CharactersTags:           request.CharactersTags,
-	})
+	character, err := service.useCase.UpdateCharacter(c.Request.Context(), request)
 	if err != nil {
 		_ = c.Error(err)
 		return
@@ -414,6 +329,9 @@ func bindCharacterPagination(c *gin.Context) (int, int, bool) {
 			return 0, 0, false
 		}
 		pageSize = value
+	}
+	if pageSize > maxNovelPageSize {
+		pageSize = maxNovelPageSize
 	}
 
 	return page, pageSize, true

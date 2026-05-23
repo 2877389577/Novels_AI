@@ -1,0 +1,129 @@
+package dto
+
+// CreateNovelRequest 是新增小说接口和业务层共用的请求参数。
+type CreateNovelRequest struct {
+	// 书名，必填。
+	Title string `json:"title" binding:"required"`
+	// 小说简介。
+	Intro string `json:"intro"`
+	// 小说作者。
+	AuthorName string `json:"authorName"`
+	// 小说封面 URL。
+	CoverURL string `json:"coverUrl"`
+	// 小说元数据（标签信息）。
+	Metadata JSONField `json:"metadata" swaggertype:"object"`
+}
+
+// UpdateNovelRequest 是全量更新小说接口和业务层共用的请求参数。
+type UpdateNovelRequest struct {
+	// 小说 ID，必填。
+	ID uint `json:"id" binding:"required"`
+	// 书名，必填。
+	Title string `json:"title" binding:"required"`
+	// 小说简介。
+	Intro string `json:"intro"`
+	// 小说作者。
+	AuthorName string `json:"authorName"`
+	// 小说封面 URL。
+	CoverURL string `json:"coverUrl"`
+	// 小说字数。
+	WordCount int64 `json:"wordCount" binding:"gte=0"`
+	// 小说元数据（标签信息）。
+	Metadata JSONField `json:"metadata" swaggertype:"object"`
+}
+
+// CreateChapterRequest 是新增章节接口和业务层共用的请求参数。
+type CreateChapterRequest struct {
+	// 小说 ID 来自路径参数，不从请求体读取。
+	NovelID int64 `json:"-"`
+	// 章节编号，必填且大于 0。
+	ChapterNo int `json:"chapterNo" binding:"required,gt=0"`
+	// 章节标题，必填。
+	Title string `json:"title" binding:"required"`
+	// 章节内容，必填。
+	Content string `json:"content" binding:"required"`
+	// 章节字数，不能小于 0。
+	WordCount int `json:"wordCount" binding:"gte=0"`
+}
+
+// UpdateChapterRequest 是全量更新章节接口和业务层共用的请求参数。
+type UpdateChapterRequest struct {
+	// 小说 ID 来自路径参数，不从请求体读取。
+	NovelID int64 `json:"-"`
+	// 章节 ID 来自路径参数，不从请求体读取。
+	ChapterID uint `json:"-"`
+	// 章节编号，必填且大于 0。
+	ChapterNo int `json:"chapterNo" binding:"required,gt=0"`
+	// 章节标题，必填。
+	Title string `json:"title" binding:"required"`
+	// 章节内容，必填。
+	Content string `json:"content" binding:"required"`
+	// 章节字数，不能小于 0。
+	WordCount int `json:"wordCount" binding:"gte=0"`
+}
+
+// CreateCharacterRequest 是新增角色接口和业务层共用的请求参数。
+type CreateCharacterRequest struct {
+	// 小说 ID 来自路径参数，不从请求体读取。
+	NovelID int64 `json:"-"`
+	// 角色名称，必填。
+	Name string `json:"name" binding:"required"`
+	// 角色性别。
+	Gender string `json:"gender"`
+	// 角色介绍。
+	Intro string `json:"intro"`
+	// 角色性格。
+	Personality string `json:"personality"`
+	// 角色外貌。
+	Appearance string `json:"appearance"`
+	// 角色背景。
+	Background string `json:"background"`
+	// 角色能力。
+	Ability string `json:"ability"`
+	// 角色动机。
+	Motivation string `json:"motivation"`
+	// 角色剧情方向。
+	PlotDirection string `json:"plotDirection"`
+	// 首次出现章节 ID。
+	FirstAppearanceChapterID *int64 `json:"firstAppearanceChapterId"`
+	// 角色形象图 URL。
+	AppearanceImgURL string `json:"appearanceImgUrl"`
+	// 角色状态：1 在线，2 下线。
+	Status *int16 `json:"status"`
+	// 角色标签。
+	CharactersTags []string `json:"charactersTags"`
+}
+
+// UpdateCharacterRequest 是全量更新角色接口和业务层共用的请求参数。
+type UpdateCharacterRequest struct {
+	// 小说 ID 来自路径参数，不从请求体读取。
+	NovelID int64 `json:"-"`
+	// 角色 ID 来自路径参数，不从请求体读取。
+	CharacterID uint `json:"-"`
+	// 角色名称，必填。
+	Name string `json:"name" binding:"required"`
+	// 角色性别。
+	Gender string `json:"gender"`
+	// 角色介绍。
+	Intro string `json:"intro"`
+	// 角色性格。
+	Personality string `json:"personality"`
+	// 角色外貌。
+	Appearance string `json:"appearance"`
+	// 角色背景。
+	Background string `json:"background"`
+	// 角色能力。
+	Ability string `json:"ability"`
+	// 角色动机。
+	Motivation string `json:"motivation"`
+	// 角色剧情方向。
+	PlotDirection string `json:"plotDirection"`
+	// 首次出现章节 ID。
+	FirstAppearanceChapterID *int64 `json:"firstAppearanceChapterId"`
+	// 角色形象图 URL。
+	AppearanceImgURL string `json:"appearanceImgUrl"`
+	// 角色状态：1 在线，2 下线。
+	Status int16 `json:"status"`
+	// 角色标签。
+	CharactersTags []string `json:"charactersTags"`
+}

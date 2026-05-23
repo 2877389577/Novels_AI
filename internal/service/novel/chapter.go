@@ -2,10 +2,12 @@ package novel
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"strconv"
 
 	novelbiz "Novels_AI/backend/internal/biz/novel"
+	"Novels_AI/backend/internal/data/dto"
 	"Novels_AI/backend/internal/pkg/common"
 
 	"github.com/gin-gonic/gin"
@@ -16,34 +18,12 @@ type ChapterService struct {
 }
 
 type ChapterUseCase interface {
-	CreateChapter(ctx context.Context, params novelbiz.CreateChapterParams) (*novelbiz.Chapter, error)
+	CreateChapter(ctx context.Context, params dto.CreateChapterRequest) (*novelbiz.Chapter, error)
 	NextChapterNo(ctx context.Context, novelID int64) (int, error)
 	ListChapters(ctx context.Context, novelID int64, page, pageSize int) (*novelbiz.ListChapterResult, error)
 	GetChapter(ctx context.Context, novelID int64, chapterID uint) (*novelbiz.Chapter, error)
-	UpdateChapter(ctx context.Context, params novelbiz.UpdateChapterParams) (*novelbiz.Chapter, error)
+	UpdateChapter(ctx context.Context, params dto.UpdateChapterRequest) (*novelbiz.Chapter, error)
 	DeleteChapter(ctx context.Context, novelID int64, chapterID uint) error
-}
-
-type createChapterRequest struct {
-	// 章节编号，必填且大于 0
-	ChapterNo int `json:"chapterNo" binding:"required"`
-	// 章节标题，必填
-	Title string `json:"title" binding:"required"`
-	// 章节内容，必填
-	Content string `json:"content" binding:"required"`
-	// 章节字数，必填；用指针是为了允许前端传 0
-	WordCount *int `json:"wordCount" binding:"required"`
-}
-
-type updateChapterRequest struct {
-	// 章节编号
-	ChapterNo *int `json:"chapterNo"`
-	// 章节标题
-	Title *string `json:"title"`
-	// 章节内容
-	Content *string `json:"content"`
-	// 章节字数
-	WordCount *int `json:"wordCount"`
 }
 
 type chapterResponse struct {
@@ -104,7 +84,7 @@ func NewChapterService(useCase ChapterUseCase) *ChapterService {
 // @Accept json
 // @Produce json
 // @Param id path int true "小说 ID"
-// @Param chapter body createChapterRequest true "章节信息"
+// @Param chapter body dto.CreateChapterRequest true "章节信息"
 // @Success 200 {object} common.Response{data=chapterResponse}
 // @Failure 400 {object} common.Response "请求参数错误"
 // @Failure 401 {object} common.Response "未登录"
@@ -119,19 +99,14 @@ func (service *ChapterService) Create(c *gin.Context) {
 		return
 	}
 
-	var request createChapterRequest
+	var request dto.CreateChapterRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		_ = c.Error(common.InvalidRequest)
 		return
 	}
+	request.NovelID = novelID
 
-	chapter, err := service.useCase.CreateChapter(c.Request.Context(), novelbiz.CreateChapterParams{
-		NovelID:   novelID,
-		ChapterNo: request.ChapterNo,
-		Title:     request.Title,
-		Content:   request.Content,
-		WordCount: *request.WordCount,
-	})
+	chapter, err := service.useCase.CreateChapter(c.Request.Context(), request)
 	if err != nil {
 		_ = c.Error(err)
 		return
@@ -214,6 +189,9 @@ func (service *ChapterService) List(c *gin.Context) {
 			return
 		}
 	}
+	if pageSize > maxNovelPageSize {
+		pageSize = maxNovelPageSize
+	}
 
 	result, err := service.useCase.ListChapters(c.Request.Context(), novelID, page, pageSize)
 	if err != nil {
@@ -284,13 +262,13 @@ func (service *ChapterService) Get(c *gin.Context) {
 
 // Update 修改章节
 // @Summary 修改章节
-// @Description 局部更新章节，并按章节字数差值同步小说总字数
+// @Description 全量更新章节，并按章节字数差值同步小说总字数
 // @Tags chapter
 // @Accept json
 // @Produce json
 // @Param id path int true "小说 ID"
 // @Param chapterId path int true "章节 ID"
-// @Param chapter body updateChapterRequest true "章节信息"
+// @Param chapter body dto.UpdateChapterRequest true "章节信息"
 // @Success 200 {object} common.Response{data=chapterResponse}
 // @Failure 400 {object} common.Response "请求参数错误"
 // @Failure 401 {object} common.Response "未登录"
@@ -301,29 +279,25 @@ func (service *ChapterService) Get(c *gin.Context) {
 func (service *ChapterService) Update(c *gin.Context) {
 	novelID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil || novelID <= 0 {
-		_ = c.Error(common.InvalidRequest)
+		_ = c.Error(common.NewSystemError(2000, "小说 ID 不能为空"))
 		return
 	}
 	chapterID, err := strconv.ParseUint(c.Param("chapterId"), 10, 64)
 	if err != nil || chapterID == 0 {
-		_ = c.Error(common.InvalidRequest)
+		_ = c.Error(common.NewSystemError(2000, "章节 ID 不能为空"))
 		return
 	}
 
-	var request updateChapterRequest
+	var request dto.UpdateChapterRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
+		slog.ErrorContext(c.Request.Context(), "更新章节请求参数错误", "err", err)
 		_ = c.Error(common.InvalidRequest)
 		return
 	}
+	request.NovelID = novelID
+	request.ChapterID = uint(chapterID)
 
-	chapter, err := service.useCase.UpdateChapter(c.Request.Context(), novelbiz.UpdateChapterParams{
-		NovelID:   novelID,
-		ChapterID: uint(chapterID),
-		ChapterNo: request.ChapterNo,
-		Title:     request.Title,
-		Content:   request.Content,
-		WordCount: request.WordCount,
-	})
+	chapter, err := service.useCase.UpdateChapter(c.Request.Context(), request)
 	if err != nil {
 		_ = c.Error(err)
 		return

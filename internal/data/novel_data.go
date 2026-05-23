@@ -64,24 +64,21 @@ func (n *NovelData) FindByID(ctx context.Context, id uint) (*Novel, error) {
 	return &novel, nil
 }
 
-// Update 按字段局部更新小说，空 map 时只校验并返回当前记录。
-func (n *NovelData) Update(ctx context.Context, id uint, values map[string]any) (*Novel, error) {
-	if len(values) == 0 {
-		return n.FindByID(ctx, id)
+// Update 使用 GORM Save 全量保存小说字段，并保留 GORM 模型元数据。
+func (n *NovelData) Update(ctx context.Context, novel *Novel) (*Novel, error) {
+	current, err := n.FindByID(ctx, novel.ID)
+	if err != nil {
+		return nil, err
 	}
 
-	result := n.db.WithContext(ctx).
-		Model(&model.Novel{}).
-		Where("id = ?", id).
-		Updates(values)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	if result.RowsAffected == 0 {
-		return nil, ErrNovelNotFound
+	modelState := current.Model
+	*current = *novel
+	current.Model = modelState
+	if err := n.db.WithContext(ctx).Save(current).Error; err != nil {
+		return nil, err
 	}
 
-	return n.FindByID(ctx, id)
+	return n.FindByID(ctx, novel.ID)
 }
 
 // Delete 使用 GORM 软删除，保留历史数据。

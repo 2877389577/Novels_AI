@@ -6,6 +6,7 @@ import (
 	"log/slog"
 
 	"Novels_AI/backend/internal/data"
+	"Novels_AI/backend/internal/data/dto"
 	"Novels_AI/backend/internal/pkg/common"
 
 	"golang.org/x/crypto/bcrypt"
@@ -40,7 +41,7 @@ func (lu *LoginUseCase) IsPasswordInitialized(ctx context.Context) (bool, error)
 }
 
 // SetPassword 仅在管理员密码为空时写入首次初始化密码。
-func (lu *LoginUseCase) SetPassword(ctx context.Context, passwd string) error {
+func (lu *LoginUseCase) SetPassword(ctx context.Context, params dto.PasswordRequest) error {
 	admin, err := lu.adminInfoData.FirstActive(ctx)
 	if err != nil && !errors.Is(err, data.ErrAdminInfoNotFound) {
 		return err
@@ -50,7 +51,7 @@ func (lu *LoginUseCase) SetPassword(ctx context.Context, passwd string) error {
 	}
 
 	adminNotFound := errors.Is(err, data.ErrAdminInfoNotFound)
-	hashedPassword, err := hashPassword(passwd)
+	hashedPassword, err := hashPassword(params.Password)
 	if err != nil {
 		slog.ErrorContext(ctx, "hashing password failed", "err", err)
 		return err
@@ -64,7 +65,7 @@ func (lu *LoginUseCase) SetPassword(ctx context.Context, passwd string) error {
 }
 
 // Login 校验初始化密码，密码正确时允许本次登录通过。
-func (lu *LoginUseCase) Login(ctx context.Context, passwd string) error {
+func (lu *LoginUseCase) Login(ctx context.Context, params dto.PasswordRequest) error {
 	admin, err := lu.adminInfoData.FirstActive(ctx)
 	if errors.Is(err, data.ErrAdminInfoNotFound) {
 		return common.NoInitialPassword
@@ -76,7 +77,7 @@ func (lu *LoginUseCase) Login(ctx context.Context, passwd string) error {
 	if admin.Password == "" {
 		return common.NoInitialPassword
 	}
-	if !checkPassword(admin.Password, passwd) {
+	if !checkPassword(admin.Password, params.Password) {
 		return common.PasswordIncorrect
 	}
 

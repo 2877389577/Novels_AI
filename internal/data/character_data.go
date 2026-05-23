@@ -73,24 +73,21 @@ func (d *CharacterData) FindByID(ctx context.Context, novelID int64, characterID
 	return &character, nil
 }
 
-// Update 按传入字段局部更新角色资料，空更新时只校验角色存在并返回当前详情。
-func (d *CharacterData) Update(ctx context.Context, novelID int64, characterID uint, values map[string]any) (*Character, error) {
-	if len(values) == 0 {
-		return d.FindByID(ctx, novelID, characterID)
+// Update 使用 GORM Save 全量保存角色资料，并保留 GORM 模型元数据。
+func (d *CharacterData) Update(ctx context.Context, character *Character) (*Character, error) {
+	current, err := d.FindByID(ctx, character.NovelID, character.ID)
+	if err != nil {
+		return nil, err
 	}
 
-	result := d.db.WithContext(ctx).
-		Model(&model.Character{}).
-		Where("id = ? AND novel_id = ?", characterID, novelID).
-		Updates(values)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	if result.RowsAffected == 0 {
-		return nil, common.CharacterNotFound
+	modelState := current.Model
+	*current = *character
+	current.Model = modelState
+	if err := d.db.WithContext(ctx).Save(current).Error; err != nil {
+		return nil, err
 	}
 
-	return d.FindByID(ctx, novelID, characterID)
+	return d.FindByID(ctx, character.NovelID, character.ID)
 }
 
 // Delete 软删除指定小说下的角色，找不到角色时返回统一业务错误。

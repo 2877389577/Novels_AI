@@ -1,0 +1,108 @@
+package dto
+
+import (
+	"bytes"
+	"encoding/json"
+
+	"gorm.io/datatypes"
+)
+
+// JSONField 承接请求体中的任意 JSON 对象，并额外记录字段是否出现。
+type JSONField struct {
+	// Set 用于区分更新接口里的“未传 configJson”和“明确传入 configJson”。
+	Set bool `json:"-"`
+	// Value 保存原始 JSON 内容，业务层会在入库前把空值和 null 统一成默认对象。
+	Value datatypes.JSON `json:"-"`
+}
+
+// CreateAIProviderRequest 是新增 AI 提供商接口和业务层共用的请求参数。
+type CreateAIProviderRequest struct {
+	// AI 提供商名称，必填。
+	Name string `json:"name" binding:"required"`
+	// AI 提供商类型，必填。
+	ProviderType string `json:"providerType" binding:"required"`
+	// AI 提供商基础 URL，必填。
+	BaseURL string `json:"baseUrl" binding:"required"`
+	// API Key 明文，必填，业务层会在入库前加密。
+	APIKey string `json:"apiKey" binding:"required"`
+	// 是否启用；不传时由业务层默认启用。
+	IsEnabled bool `json:"isEnabled"`
+	// AI 提供商额外配置。
+	ConfigJSON JSONField `json:"configJson" swaggertype:"object"`
+	// 支持的模型列表。
+	Models []string `json:"models"`
+	// 最大上下文长度，不传时使用数据库字段零值。
+	MaxContextLength int64 `json:"maxContextLength"`
+	// 最大输入令牌数，不传时使用数据库字段零值。
+	MaxInputTokens int `json:"maxInputTokens"`
+	// 最大输出令牌数，不传时使用数据库字段零值。
+	MaxOutputTokens int `json:"maxOutputTokens"`
+}
+
+// UnmarshalJSON 记录 isEnabled 是否出现，避免显式传 false 被当成未传处理。
+func (request *CreateAIProviderRequest) UnmarshalJSON(data []byte) error {
+	type createAIProviderRequest CreateAIProviderRequest
+	var parsed createAIProviderRequest
+	if err := json.Unmarshal(data, &parsed); err != nil {
+		return err
+	}
+
+	*request = CreateAIProviderRequest(parsed)
+	return nil
+}
+
+// UpdateAIProviderRequest 是全量更新 AI 提供商接口和业务层共用的请求参数。
+type UpdateAIProviderRequest struct {
+	// ID 来自路径参数，不从请求体读取。
+	ID int64 `json:"-"`
+	// AI 提供商名称，必填。
+	Name string `json:"name" binding:"required"`
+	// AI 提供商类型，必填。
+	ProviderType string `json:"providerType" binding:"required"`
+	// AI 提供商基础 URL，必填。
+	BaseURL string `json:"baseUrl" binding:"required"`
+	// API Key 明文，必填，业务层会在入库前重新加密。
+	APIKey string `json:"apiKey" binding:"required"`
+	// 是否启用。
+	IsEnabled bool `json:"isEnabled"`
+	// AI 提供商额外配置。
+	ConfigJSON JSONField `json:"configJson" swaggertype:"object"`
+	// 支持的模型列表。
+	Models []string `json:"models"`
+	// 最大上下文长度。
+	MaxContextLength int64 `json:"maxContextLength"`
+	// 最大输入令牌数。
+	MaxInputTokens int `json:"maxInputTokens"`
+	// 最大输出令牌数。
+	MaxOutputTokens int `json:"maxOutputTokens"`
+}
+
+// QueryAIProviderModelsRequest 是查询上游模型列表接口和业务层共用的请求参数。
+type QueryAIProviderModelsRequest struct {
+	// AI 提供商基础 URL，后端会按 OpenAI 兼容协议拼接到 /v1/models。
+	BaseURL string `json:"baseUrl" binding:"required"`
+	// API Key 明文，仅用于本次上游查询，不入库也不返回。
+	APIKey string `json:"apiKey" binding:"required"`
+}
+
+// UnmarshalJSON 记录 configJson 字段是否出现，便于 PUT 区分“未传”和“传 null”。
+func (field *JSONField) UnmarshalJSON(data []byte) error {
+	field.Set = true
+	if bytes.Equal(data, []byte("null")) {
+		field.Value = datatypes.JSON([]byte("{}"))
+		return nil
+	}
+
+	field.Value = datatypes.JSON(append([]byte(nil), data...))
+	return nil
+}
+
+func findRawField(data []byte, key string) (json.RawMessage, bool) {
+	var rawFields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &rawFields); err != nil {
+		return nil, false
+	}
+
+	rawValue, ok := rawFields[key]
+	return rawValue, ok
+}

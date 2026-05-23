@@ -1,7 +1,6 @@
 package novel
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -10,56 +9,25 @@ import (
 	"strconv"
 
 	novelbiz "Novels_AI/backend/internal/biz/novel"
+	"Novels_AI/backend/internal/data/dto"
 	"Novels_AI/backend/internal/pkg/common"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
+
+const maxNovelPageSize = 100
 
 type NovelService struct {
 	useCase NovelUseCase
 }
 
 type NovelUseCase interface {
-	Create(ctx context.Context, params novelbiz.CreateNovelParams) (*novelbiz.Novel, error)
+	Create(ctx context.Context, params dto.CreateNovelRequest) (*novelbiz.Novel, error)
 	List(ctx context.Context, page, pageSize int) (*novelbiz.ListNovelResult, error)
 	Get(ctx context.Context, id uint) (*novelbiz.Novel, error)
-	Update(ctx context.Context, id uint, params novelbiz.UpdateNovelParams) (*novelbiz.Novel, error)
+	Update(ctx context.Context, params dto.UpdateNovelRequest) (*novelbiz.Novel, error)
 	Delete(ctx context.Context, id uint) error
-}
-
-type createNovelRequest struct {
-	// 书名，必填
-	Title string `json:"title" binding:"required"`
-	// 小说简介
-	Intro string `json:"intro"`
-	// 小说作者
-	AuthorName string `json:"authorName"`
-	// 小说封面 URL
-	CoverURL string `json:"coverUrl"`
-	// 小说元数据（标签信息）
-	Metadata rawJSONField `json:"metadata" swaggertype:"object"`
-}
-
-type updateNovelRequest struct {
-	// 小说 ID，必填
-	ID uint `json:"id" binding:"required"`
-	// 书名
-	Title *string `json:"title"`
-	// 小说简介
-	Intro *string `json:"intro"`
-	// 小说作者
-	AuthorName *string `json:"authorName"`
-	// 小说封面 URL
-	CoverURL *string `json:"coverUrl"`
-	// 小说元数据（标签信息）
-	Metadata rawJSONField `json:"metadata" swaggertype:"object"`
-}
-
-type rawJSONField struct {
-	Set   bool
-	Value datatypes.JSON
 }
 
 type novelResponse struct {
@@ -92,45 +60,27 @@ func NewNovelService(useCase NovelUseCase) *NovelService {
 	return &NovelService{useCase: useCase}
 }
 
-// UnmarshalJSON 记录 metadata 字段是否出现，便于 PUT 区分“未传”和“传 null”。
-func (r *rawJSONField) UnmarshalJSON(data []byte) error {
-	r.Set = true
-	if bytes.Equal(data, []byte("null")) {
-		r.Value = datatypes.JSON([]byte("{}"))
-		return nil
-	}
-
-	r.Value = datatypes.JSON(append([]byte(nil), data...))
-	return nil
-}
-
 // Create 新增小说
 // @Summary 新增小说
 // @Description 创建小说，仅书名必填
 // @Tags novel
 // @Accept json
 // @Produce json
-// @Param novel body createNovelRequest true "小说信息"
+// @Param novel body dto.CreateNovelRequest true "小说信息"
 // @Success 200 {object} common.Response{data=novelResponse}
 // @Failure 400 {object} common.Response "请求参数错误"
 // @Failure 401 {object} common.Response "未登录"
 // @Failure 500 {object} common.SystemError "系统错误"
 // @Router /novels [post]
 func (service *NovelService) Create(c *gin.Context) {
-	var request createNovelRequest
+	var request dto.CreateNovelRequest
 	err := c.ShouldBindJSON(&request)
 	if err != nil {
 		_ = c.Error(common.InvalidRequest)
 		return
 	}
 
-	novel, err := service.useCase.Create(c.Request.Context(), novelbiz.CreateNovelParams{
-		Title:      request.Title,
-		Intro:      request.Intro,
-		AuthorName: request.AuthorName,
-		CoverURL:   request.CoverURL,
-		Metadata:   request.Metadata.Value,
-	})
+	novel, err := service.useCase.Create(c.Request.Context(), request)
 	if err != nil {
 		_ = c.Error(err)
 		return
@@ -219,11 +169,11 @@ func (service *NovelService) Get(c *gin.Context) {
 
 // Update 更新小说
 // @Summary 更新小说
-// @Description 按 ID 局部更新小说
+// @Description 按 ID 全量更新小说
 // @Tags novel
 // @Accept json
 // @Produce json
-// @Param novel body updateNovelRequest true "小说信息"
+// @Param novel body dto.UpdateNovelRequest true "小说信息"
 // @Success 200 {object} common.Response{data=novelResponse}
 // @Failure 400 {object} common.Response "请求参数错误"
 // @Failure 401 {object} common.Response "未登录"
@@ -231,23 +181,13 @@ func (service *NovelService) Get(c *gin.Context) {
 // @Failure 500 {object} common.SystemError "系统错误"
 // @Router /novels/update [put]
 func (service *NovelService) Update(c *gin.Context) {
-	var request updateNovelRequest
+	var request dto.UpdateNovelRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		_ = c.Error(common.InvalidRequest)
 		return
 	}
 
-	params := novelbiz.UpdateNovelParams{
-		Title:      request.Title,
-		Intro:      request.Intro,
-		AuthorName: request.AuthorName,
-		CoverURL:   request.CoverURL,
-	}
-	if request.Metadata.Set {
-		params.Metadata = new(request.Metadata.Value)
-	}
-
-	novel, err := service.useCase.Update(c.Request.Context(), request.ID, params)
+	novel, err := service.useCase.Update(c.Request.Context(), request)
 	if err != nil {
 		slog.ErrorContext(c.Request.Context(), "更新小说失败", "err", err)
 		_ = c.Error(err)
@@ -301,6 +241,9 @@ func bindPagination(c *gin.Context) (int, int, bool) {
 	pageSize, ok := bindPositiveQuery(c, "pageSize", 10)
 	if !ok {
 		return 0, 0, false
+	}
+	if pageSize > maxNovelPageSize {
+		pageSize = maxNovelPageSize
 	}
 
 	return page, pageSize, true

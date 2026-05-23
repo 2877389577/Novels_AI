@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"strings"
 
 	"Novels_AI/backend/internal/data"
+	"Novels_AI/backend/internal/data/dto"
 	"Novels_AI/backend/internal/pkg/common"
 
 	"gorm.io/gorm"
@@ -25,25 +25,8 @@ type ChapterRepo interface {
 	FindByID(ctx context.Context, novelID int64, chapterID uint) (*data.Chapter, error)
 	ChapterNoExists(ctx context.Context, novelID int64, chapterNo int, excludeID uint) (bool, error)
 	MaxChapterNo(ctx context.Context, novelID int64) (int, error)
-	Update(ctx context.Context, novelID int64, chapterID uint, values map[string]any, wordDelta int64) (*data.Chapter, error)
+	Update(ctx context.Context, chapter *data.Chapter, wordDelta int64) (*data.Chapter, error)
 	Delete(ctx context.Context, novelID int64, chapterID uint, wordDelta int64) error
-}
-
-type CreateChapterParams struct {
-	NovelID   int64
-	ChapterNo int
-	Title     string
-	Content   string
-	WordCount int
-}
-
-type UpdateChapterParams struct {
-	NovelID   int64
-	ChapterID uint
-	ChapterNo *int
-	Title     *string
-	Content   *string
-	WordCount *int
 }
 
 type ListChapterResult struct {
@@ -60,18 +43,8 @@ func NewChapterUseCase(novelData NovelRepo, chapterData ChapterRepo) *ChapterUse
 	}
 }
 
-// CreateChapter 校验章节信息后新增章节，并把章节字数同步累加到小说总字数。
-func (uc *ChapterUseCase) CreateChapter(ctx context.Context, params CreateChapterParams) (*data.Chapter, error) {
-	title, content, err := normalizeChapterText(params.Title, params.Content)
-	if err != nil {
-		return nil, err
-	}
-	if err := validateChapterNo(params.ChapterNo); err != nil {
-		return nil, err
-	}
-	if err := validateChapterWordCount(params.WordCount); err != nil {
-		return nil, err
-	}
+// CreateChapter 新增章节，并把章节字数同步累加到小说总字数。
+func (uc *ChapterUseCase) CreateChapter(ctx context.Context, params dto.CreateChapterRequest) (*data.Chapter, error) {
 	if err := uc.ensureNovelExists(ctx, params.NovelID); err != nil {
 		return nil, err
 	}
@@ -88,8 +61,8 @@ func (uc *ChapterUseCase) CreateChapter(ctx context.Context, params CreateChapte
 	chapter := &data.Chapter{
 		NovelID:   params.NovelID,
 		ChapterNo: params.ChapterNo,
-		Title:     title,
-		Content:   content,
+		Title:     params.Title,
+		Content:   params.Content,
 		WordCount: params.WordCount,
 	}
 	return uc.chapterData.Create(ctx, chapter, int64(params.WordCount))
@@ -116,7 +89,6 @@ func (uc *ChapterUseCase) ListChapters(ctx context.Context, novelID int64, page,
 		return nil, err
 	}
 
-	page, pageSize = normalizePagination(page, pageSize)
 	offset := (page - 1) * pageSize
 
 	items, total, err := uc.chapterData.List(ctx, novelID, offset, pageSize)
@@ -137,57 +109,32 @@ func (uc *ChapterUseCase) GetChapter(ctx context.Context, novelID int64, chapter
 	return uc.chapterData.FindByID(ctx, novelID, chapterID)
 }
 
-// UpdateChapter 局部更新章节；如果章节字数变化，则按差值维护小说总字数。
-func (uc *ChapterUseCase) UpdateChapter(ctx context.Context, params UpdateChapterParams) (*data.Chapter, error) {
+// UpdateChapter 全量更新章节；如果章节字数变化，则按差值维护小说总字数。
+func (uc *ChapterUseCase) UpdateChapter(ctx context.Context, params dto.UpdateChapterRequest) (*data.Chapter, error) {
 	oldChapter, err := uc.chapterData.FindByID(ctx, params.NovelID, params.ChapterID)
 	if err != nil {
 		return nil, err
 	}
 
-	values := make(map[string]any)
-	if params.ChapterNo != nil {
-		if err := validateChapterNo(*params.ChapterNo); err != nil {
+	if params.ChapterNo != oldChapter.ChapterNo {
+		exists, err := uc.chapterData.ChapterNoExists(ctx, params.NovelID, params.ChapterNo, params.ChapterID)
+		if err != nil {
+			slog.ErrorContext(ctx, "检查章节编号失败", "err", err)
 			return nil, err
 		}
-		if *params.ChapterNo != oldChapter.ChapterNo {
-			exists, err := uc.chapterData.ChapterNoExists(ctx, params.NovelID, *params.ChapterNo, params.ChapterID)
-			if err != nil {
-				slog.ErrorContext(ctx, "检查章节编号失败", "err", err)
-				return nil, err
-			}
-			if exists {
-				return nil, common.ChapterNoExists
-			}
-			values["chapter_no"] = *params.ChapterNo
-		}
-	}
-	if params.Title != nil {
-		title := strings.TrimSpace(*params.Title)
-		if title == "" {
-			return nil, common.ChapterTitleRequired
-		}
-		values["title"] = title
-	}
-	if params.Content != nil {
-		content := strings.TrimSpace(*params.Content)
-		if content == "" {
-			return nil, common.ChapterContentRequired
-		}
-		values["content"] = content
-	}
-
-	var wordDelta int64
-	if params.WordCount != nil {
-		if err := validateChapterWordCount(*params.WordCount); err != nil {
-			return nil, err
-		}
-		if *params.WordCount != oldChapter.WordCount {
-			values["word_count"] = *params.WordCount
-			wordDelta = int64(*params.WordCount - oldChapter.WordCount)
+		if exists {
+			return nil, common.ChapterNoExists
 		}
 	}
 
-	return uc.chapterData.Update(ctx, params.NovelID, params.ChapterID, values, wordDelta)
+	chapter := *oldChapter
+	chapter.ChapterNo = params.ChapterNo
+	chapter.Title = params.Title
+	chapter.Content = params.Content
+	chapter.WordCount = params.WordCount
+	wordDelta := int64(params.WordCount - oldChapter.WordCount)
+
+	return uc.chapterData.Update(ctx, &chapter, wordDelta)
 }
 
 // DeleteChapter 软删除章节，并按章节原字数扣减小说总字数。
@@ -211,34 +158,4 @@ func (uc *ChapterUseCase) ensureNovelExists(ctx context.Context, novelID int64) 
 
 	slog.ErrorContext(ctx, "查询小说失败", "err", err)
 	return err
-}
-
-func normalizeChapterText(title, content string) (string, string, error) {
-	title = strings.TrimSpace(title)
-	if title == "" {
-		return "", "", common.ChapterTitleRequired
-	}
-
-	content = strings.TrimSpace(content)
-	if content == "" {
-		return "", "", common.ChapterContentRequired
-	}
-
-	return title, content, nil
-}
-
-func validateChapterNo(chapterNo int) error {
-	if chapterNo <= 0 {
-		return common.ChapterNoInvalid
-	}
-
-	return nil
-}
-
-func validateChapterWordCount(wordCount int) error {
-	if wordCount < 0 {
-		return common.ChapterWordCountInvalid
-	}
-
-	return nil
 }

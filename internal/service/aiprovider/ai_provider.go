@@ -1,18 +1,20 @@
 package aiprovider
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"strconv"
 
 	aiproviderbiz "Novels_AI/backend/internal/biz/aiprovider"
+	"Novels_AI/backend/internal/data/dto"
 	"Novels_AI/backend/internal/pkg/common"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/datatypes"
 )
+
+const maxAIProviderPageSize = 100
 
 type AIProviderService struct {
 	useCase AIProviderUseCase
@@ -20,62 +22,12 @@ type AIProviderService struct {
 
 // AIProviderUseCase 描述 service 层依赖的 AI 提供商业务能力。
 type AIProviderUseCase interface {
-	Create(ctx context.Context, params aiproviderbiz.CreateAIProviderParams) (*aiproviderbiz.AIProviderDetail, error)
+	Create(ctx context.Context, params dto.CreateAIProviderRequest) (*aiproviderbiz.AIProviderDetail, error)
 	List(ctx context.Context, page, pageSize int) (*aiproviderbiz.ListAIProviderResult, error)
 	Get(ctx context.Context, id int64) (*aiproviderbiz.AIProviderDetail, error)
-	Update(ctx context.Context, params aiproviderbiz.UpdateAIProviderParams) (*aiproviderbiz.AIProviderDetail, error)
+	Update(ctx context.Context, params dto.UpdateAIProviderRequest) (*aiproviderbiz.AIProviderDetail, error)
 	Delete(ctx context.Context, id int64) error
-	QueryModels(ctx context.Context, params aiproviderbiz.QueryAIProviderModelsParams) ([]string, error)
-}
-
-type createAIProviderRequest struct {
-	// AI 提供商名称，必填
-	Name string `json:"name" binding:"required"`
-	// AI 提供商类型，必填
-	ProviderType string `json:"providerType" binding:"required"`
-	// AI 提供商基础 URL，必填
-	BaseURL string `json:"baseUrl" binding:"required"`
-	// API Key 明文，必填，入库前会加密
-	APIKey string `json:"apiKey" binding:"required"`
-	// 是否启用；不传时默认 true
-	IsEnabled *bool `json:"isEnabled"`
-	// 优先级；不传时默认 100
-	Priority *int `json:"priority"`
-	// AI 提供商额外配置
-	ConfigJSON rawJSONField `json:"configJson" swaggertype:"object"`
-	// 支持的模型列表
-	Models []string `json:"models"`
-}
-
-type updateAIProviderRequest struct {
-	// AI 提供商名称
-	Name *string `json:"name"`
-	// AI 提供商类型
-	ProviderType *string `json:"providerType"`
-	// AI 提供商基础 URL
-	BaseURL *string `json:"baseUrl"`
-	// API Key 明文；传入时重新加密，不传则保留原值
-	APIKey *string `json:"apiKey"`
-	// 是否启用
-	IsEnabled *bool `json:"isEnabled"`
-	// 优先级
-	Priority *int `json:"priority"`
-	// AI 提供商额外配置
-	ConfigJSON rawJSONField `json:"configJson" swaggertype:"object"`
-	// 支持的模型列表；使用指针区分“未传”和“传空数组”
-	Models *[]string `json:"models"`
-}
-
-type queryAIProviderModelsRequest struct {
-	// AI 提供商基础 URL，后端会按 OpenAI 兼容协议拼接到 /v1/models。
-	BaseURL string `json:"baseUrl" binding:"required"`
-	// API Key 明文，仅用于本次上游查询，不入库也不返回。
-	APIKey string `json:"apiKey" binding:"required"`
-}
-
-type rawJSONField struct {
-	Set   bool
-	Value datatypes.JSON
+	QueryModels(ctx context.Context, params dto.QueryAIProviderModelsRequest) ([]string, error)
 }
 
 type aiProviderResponse struct {
@@ -91,12 +43,16 @@ type aiProviderResponse struct {
 	APIKey string `json:"apiKey,omitempty"`
 	// 是否启用
 	IsEnabled bool `json:"isEnabled"`
-	// 优先级
-	Priority int `json:"priority"`
 	// AI 提供商额外配置
 	ConfigJSON json.RawMessage `json:"configJson" swaggertype:"object"`
 	// 支持的模型列表
 	Models []string `json:"models"`
+	// 最大上下文长度
+	MaxContextLength int64 `json:"maxContextLength"`
+	// 最大输入令牌数
+	MaxInputTokens int `json:"maxInputTokens"`
+	// 最大输出令牌数
+	MaxOutputTokens int `json:"maxOutputTokens"`
 	// 创建时间
 	CreatedAt string `json:"createdAt"`
 	// 更新时间
@@ -119,47 +75,26 @@ func NewAIProviderService(useCase AIProviderUseCase) *AIProviderService {
 	return &AIProviderService{useCase: useCase}
 }
 
-// UnmarshalJSON 记录 configJson 字段是否出现，便于 PUT 区分“未传”和“传 null”。
-func (r *rawJSONField) UnmarshalJSON(data []byte) error {
-	r.Set = true
-	if bytes.Equal(data, []byte("null")) {
-		r.Value = datatypes.JSON([]byte("{}"))
-		return nil
-	}
-
-	r.Value = datatypes.JSON(append([]byte(nil), data...))
-	return nil
-}
-
 // Create 新增 AI 提供商
 // @Summary 新增 AI 提供商
 // @Description 创建 AI 提供商，API Key 入库前会加密
 // @Tags ai-provider
 // @Accept json
 // @Produce json
-// @Param provider body createAIProviderRequest true "AI 提供商信息"
+// @Param provider body dto.CreateAIProviderRequest true "AI 提供商信息"
 // @Success 200 {object} common.Response{data=aiProviderResponse}
 // @Failure 400 {object} common.Response "请求参数错误"
 // @Failure 401 {object} common.Response "未登录"
 // @Failure 500 {object} common.SystemError "系统错误"
 // @Router /ai-providers [post]
 func (service *AIProviderService) Create(c *gin.Context) {
-	var request createAIProviderRequest
+	var request dto.CreateAIProviderRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		_ = c.Error(common.InvalidRequest)
 		return
 	}
 
-	detail, err := service.useCase.Create(c.Request.Context(), aiproviderbiz.CreateAIProviderParams{
-		Name:         request.Name,
-		ProviderType: request.ProviderType,
-		BaseURL:      request.BaseURL,
-		APIKey:       request.APIKey,
-		IsEnabled:    request.IsEnabled,
-		Priority:     request.Priority,
-		ConfigJSON:   request.ConfigJSON.Value,
-		Models:       request.Models,
-	})
+	detail, err := service.useCase.Create(c.Request.Context(), request)
 	if err != nil {
 		_ = c.Error(err)
 		return
@@ -198,7 +133,7 @@ func (service *AIProviderService) List(c *gin.Context) {
 
 	items := make([]aiProviderResponse, 0, len(result.Items))
 	for _, item := range result.Items {
-		items = append(items, toAIProviderListItemResponse(new(item)))
+		items = append(items, toAIProviderListItemResponse(item))
 	}
 
 	c.JSON(http.StatusOK, &common.Response{
@@ -219,7 +154,7 @@ func (service *AIProviderService) List(c *gin.Context) {
 // @Tags ai-provider
 // @Accept json
 // @Produce json
-// @Param provider body queryAIProviderModelsRequest true "AI 提供商连接信息"
+// @Param provider body dto.QueryAIProviderModelsRequest true "AI 提供商连接信息"
 // @Success 200 {object} common.Response{data=aiProviderModelsResponse}
 // @Failure 400 {object} common.Response "请求参数错误"
 // @Failure 401 {object} common.Response "未登录"
@@ -227,16 +162,13 @@ func (service *AIProviderService) List(c *gin.Context) {
 // @Failure 500 {object} common.SystemError "系统错误"
 // @Router /ai-providers/models/query [post]
 func (service *AIProviderService) QueryModels(c *gin.Context) {
-	var request queryAIProviderModelsRequest
+	var request dto.QueryAIProviderModelsRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		_ = c.Error(common.InvalidRequest)
 		return
 	}
 
-	models, err := service.useCase.QueryModels(c.Request.Context(), aiproviderbiz.QueryAIProviderModelsParams{
-		BaseURL: request.BaseURL,
-		APIKey:  request.APIKey,
-	})
+	models, err := service.useCase.QueryModels(c.Request.Context(), request)
 	if err != nil {
 		_ = c.Error(err)
 		return
@@ -282,12 +214,12 @@ func (service *AIProviderService) Get(c *gin.Context) {
 
 // Update 更新 AI 提供商
 // @Summary 更新 AI 提供商
-// @Description 按 ID 局部更新 AI 提供商，传入 API Key 时重新加密
+// @Description 按 ID 全量更新 AI 提供商，API Key 会重新加密
 // @Tags ai-provider
 // @Accept json
 // @Produce json
 // @Param id path int true "AI 提供商 ID"
-// @Param provider body updateAIProviderRequest true "AI 提供商信息"
+// @Param provider body dto.UpdateAIProviderRequest true "AI 提供商信息"
 // @Success 200 {object} common.Response{data=aiProviderResponse}
 // @Failure 400 {object} common.Response "请求参数错误"
 // @Failure 401 {object} common.Response "未登录"
@@ -300,27 +232,15 @@ func (service *AIProviderService) Update(c *gin.Context) {
 		return
 	}
 
-	var request updateAIProviderRequest
+	var request dto.UpdateAIProviderRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
+		slog.ErrorContext(c.Request.Context(), "更新 AI 提供商请求参数错误", "err", err)
 		_ = c.Error(common.InvalidRequest)
 		return
 	}
+	request.ID = id
 
-	params := aiproviderbiz.UpdateAIProviderParams{
-		ID:           id,
-		Name:         request.Name,
-		ProviderType: request.ProviderType,
-		BaseURL:      request.BaseURL,
-		APIKey:       request.APIKey,
-		IsEnabled:    request.IsEnabled,
-		Priority:     request.Priority,
-		Models:       request.Models,
-	}
-	if request.ConfigJSON.Set {
-		params.ConfigJSON = new(request.ConfigJSON.Value)
-	}
-
-	detail, err := service.useCase.Update(c.Request.Context(), params)
+	detail, err := service.useCase.Update(c.Request.Context(), request)
 	if err != nil {
 		_ = c.Error(err)
 		return
@@ -382,6 +302,9 @@ func bindPagination(c *gin.Context) (int, int, bool) {
 	if !ok {
 		return 0, 0, false
 	}
+	if pageSize > maxAIProviderPageSize {
+		pageSize = maxAIProviderPageSize
+	}
 
 	return page, pageSize, true
 }
@@ -415,15 +338,18 @@ func toAIProviderListItemResponse(provider *aiproviderbiz.AIProvider) aiProvider
 	}
 
 	return aiProviderResponse{
-		ID:           provider.ID,
-		Name:         provider.Name,
-		ProviderType: provider.ProviderType,
-		BaseURL:      provider.BaseURL,
-		IsEnabled:    provider.IsEnabled,
-		Priority:     provider.Priority,
-		ConfigJSON:   configJSON,
-		Models:       []string(provider.Models),
-		CreatedAt:    provider.CreatedAt.Format("2006-01-02T15:04:05"),
-		UpdatedAt:    provider.UpdatedAt.Format("2006-01-02T15:04:05"),
+		ID:               provider.ID,
+		Name:             provider.Name,
+		ProviderType:     provider.ProviderType,
+		APIKey:           provider.APIKeyEncrypted,
+		BaseURL:          provider.BaseURL,
+		IsEnabled:        provider.IsEnabled,
+		ConfigJSON:       configJSON,
+		Models:           []string(provider.Models),
+		MaxContextLength: provider.MaxContextLength,
+		MaxInputTokens:   provider.MaxInputTokens,
+		MaxOutputTokens:  provider.MaxOutputTokens,
+		CreatedAt:        provider.CreatedAt.Format("2006-01-02T15:04:05"),
+		UpdatedAt:        provider.UpdatedAt.Format("2006-01-02T15:04:05"),
 	}
 }

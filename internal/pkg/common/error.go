@@ -75,6 +75,8 @@ var (
 	AIProviderAPIKeyDecryptFailed = NewHTTPError(http.StatusInternalServerError, 6005, "AI提供商API密钥解密失败")
 	// AIProviderModelsQueryFailed 表示按 OpenAI 兼容协议查询模型列表失败。
 	AIProviderModelsQueryFailed = NewHTTPError(http.StatusBadGateway, 6006, "AI提供商模型查询失败")
+	// AIProviderEnabledConflict 表示当前系统已经存在启用的 AI 提供商，业务层应阻止再启用其他供应商。
+	AIProviderEnabledConflict = NewHTTPError(http.StatusOK, 6007, "已有启用的AI提供商")
 )
 
 var (

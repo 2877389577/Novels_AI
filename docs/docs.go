@@ -106,7 +106,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/aiprovider.createAIProviderRequest"
+                            "$ref": "#/definitions/dto.CreateAIProviderRequest"
                         }
                     }
                 ],
@@ -170,7 +170,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/aiprovider.queryAIProviderModelsRequest"
+                            "$ref": "#/definitions/dto.QueryAIProviderModelsRequest"
                         }
                     }
                 ],
@@ -285,7 +285,7 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "按 ID 局部更新 AI 提供商，传入 API Key 时重新加密",
+                "description": "按 ID 全量更新 AI 提供商，API Key 会重新加密",
                 "consumes": [
                     "application/json"
                 ],
@@ -310,7 +310,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/aiprovider.updateAIProviderRequest"
+                            "$ref": "#/definitions/dto.UpdateAIProviderRequest"
                         }
                     }
                 ],
@@ -431,7 +431,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/login.passwordRequest"
+                            "$ref": "#/definitions/dto.PasswordRequest"
                         }
                     }
                 ],
@@ -512,7 +512,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/login.passwordRequest"
+                            "$ref": "#/definitions/dto.PasswordRequest"
                         }
                     }
                 ],
@@ -620,7 +620,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/novel.createNovelRequest"
+                            "$ref": "#/definitions/dto.CreateNovelRequest"
                         }
                     }
                 ],
@@ -666,7 +666,7 @@ const docTemplate = `{
         },
         "/novels/update": {
             "put": {
-                "description": "按 ID 局部更新小说",
+                "description": "按 ID 全量更新小说",
                 "consumes": [
                     "application/json"
                 ],
@@ -684,7 +684,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/novel.updateNovelRequest"
+                            "$ref": "#/definitions/dto.UpdateNovelRequest"
                         }
                     }
                 ],
@@ -952,7 +952,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/novel.createChapterRequest"
+                            "$ref": "#/definitions/dto.CreateChapterRequest"
                         }
                     }
                 ],
@@ -1145,7 +1145,7 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "局部更新章节，并按章节字数差值同步小说总字数",
+                "description": "全量更新章节，并按章节字数差值同步小说总字数",
                 "consumes": [
                     "application/json"
                 ],
@@ -1177,7 +1177,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/novel.updateChapterRequest"
+                            "$ref": "#/definitions/dto.UpdateChapterRequest"
                         }
                     }
                 ],
@@ -1393,7 +1393,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/novel.createCharacterRequest"
+                            "$ref": "#/definitions/dto.CreateCharacterRequest"
                         }
                     }
                 ],
@@ -1515,7 +1515,7 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "局部更新指定小说下的角色资料",
+                "description": "全量更新指定小说下的角色资料",
                 "consumes": [
                     "application/json"
                 ],
@@ -1547,7 +1547,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/novel.updateCharacterRequest"
+                            "$ref": "#/definitions/dto.UpdateCharacterRequest"
                         }
                     }
                 ],
@@ -1778,6 +1778,18 @@ const docTemplate = `{
                     "description": "是否启用",
                     "type": "boolean"
                 },
+                "maxContextLength": {
+                    "description": "最大上下文长度",
+                    "type": "integer"
+                },
+                "maxInputTokens": {
+                    "description": "最大输入令牌数",
+                    "type": "integer"
+                },
+                "maxOutputTokens": {
+                    "description": "最大输出令牌数",
+                    "type": "integer"
+                },
                 "models": {
                     "description": "支持的模型列表",
                     "type": "array",
@@ -1788,10 +1800,6 @@ const docTemplate = `{
                 "name": {
                     "description": "AI 提供商名称",
                     "type": "string"
-                },
-                "priority": {
-                    "description": "优先级",
-                    "type": "integer"
                 },
                 "providerType": {
                     "description": "AI 提供商类型",
@@ -1799,109 +1807,6 @@ const docTemplate = `{
                 },
                 "updatedAt": {
                     "description": "更新时间",
-                    "type": "string"
-                }
-            }
-        },
-        "aiprovider.createAIProviderRequest": {
-            "type": "object",
-            "required": [
-                "apiKey",
-                "baseUrl",
-                "name",
-                "providerType"
-            ],
-            "properties": {
-                "apiKey": {
-                    "description": "API Key 明文，必填，入库前会加密",
-                    "type": "string"
-                },
-                "baseUrl": {
-                    "description": "AI 提供商基础 URL，必填",
-                    "type": "string"
-                },
-                "configJson": {
-                    "description": "AI 提供商额外配置",
-                    "type": "object"
-                },
-                "isEnabled": {
-                    "description": "是否启用；不传时默认 true",
-                    "type": "boolean"
-                },
-                "models": {
-                    "description": "支持的模型列表",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "name": {
-                    "description": "AI 提供商名称，必填",
-                    "type": "string"
-                },
-                "priority": {
-                    "description": "优先级；不传时默认 100",
-                    "type": "integer"
-                },
-                "providerType": {
-                    "description": "AI 提供商类型，必填",
-                    "type": "string"
-                }
-            }
-        },
-        "aiprovider.queryAIProviderModelsRequest": {
-            "type": "object",
-            "required": [
-                "apiKey",
-                "baseUrl"
-            ],
-            "properties": {
-                "apiKey": {
-                    "description": "API Key 明文，仅用于本次上游查询，不入库也不返回。",
-                    "type": "string"
-                },
-                "baseUrl": {
-                    "description": "AI 提供商基础 URL，后端会按 OpenAI 兼容协议拼接到 /v1/models。",
-                    "type": "string"
-                }
-            }
-        },
-        "aiprovider.updateAIProviderRequest": {
-            "type": "object",
-            "properties": {
-                "apiKey": {
-                    "description": "API Key 明文；传入时重新加密，不传则保留原值",
-                    "type": "string"
-                },
-                "baseUrl": {
-                    "description": "AI 提供商基础 URL",
-                    "type": "string"
-                },
-                "configJson": {
-                    "description": "AI 提供商额外配置",
-                    "type": "object"
-                },
-                "isEnabled": {
-                    "description": "是否启用",
-                    "type": "boolean"
-                },
-                "models": {
-                    "description": "支持的模型列表；使用指针区分“未传”和“传空数组”",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "name": {
-                    "description": "AI 提供商名称",
-                    "type": "string"
-                },
-                "priority": {
-                    "description": "优先级",
-                    "type": "integer"
-                },
-                "providerType": {
-                    "description": "AI 提供商类型",
                     "type": "string"
                 }
             }
@@ -1935,11 +1840,386 @@ const docTemplate = `{
                 }
             }
         },
-        "login.passwordRequest": {
+        "dto.CreateAIProviderRequest": {
             "type": "object",
+            "required": [
+                "apiKey",
+                "baseUrl",
+                "name",
+                "providerType"
+            ],
+            "properties": {
+                "apiKey": {
+                    "description": "API Key 明文，必填，业务层会在入库前加密。",
+                    "type": "string"
+                },
+                "baseUrl": {
+                    "description": "AI 提供商基础 URL，必填。",
+                    "type": "string"
+                },
+                "configJson": {
+                    "description": "AI 提供商额外配置。",
+                    "type": "object"
+                },
+                "isEnabled": {
+                    "description": "是否启用；不传时由业务层默认启用。",
+                    "type": "boolean"
+                },
+                "maxContextLength": {
+                    "description": "最大上下文长度，不传时使用数据库字段零值。",
+                    "type": "integer"
+                },
+                "maxInputTokens": {
+                    "description": "最大输入令牌数，不传时使用数据库字段零值。",
+                    "type": "integer"
+                },
+                "maxOutputTokens": {
+                    "description": "最大输出令牌数，不传时使用数据库字段零值。",
+                    "type": "integer"
+                },
+                "models": {
+                    "description": "支持的模型列表。",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "name": {
+                    "description": "AI 提供商名称，必填。",
+                    "type": "string"
+                },
+                "providerType": {
+                    "description": "AI 提供商类型，必填。",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.CreateChapterRequest": {
+            "type": "object",
+            "required": [
+                "chapterNo",
+                "content",
+                "title"
+            ],
+            "properties": {
+                "chapterNo": {
+                    "description": "章节编号，必填且大于 0。",
+                    "type": "integer"
+                },
+                "content": {
+                    "description": "章节内容，必填。",
+                    "type": "string"
+                },
+                "title": {
+                    "description": "章节标题，必填。",
+                    "type": "string"
+                },
+                "wordCount": {
+                    "description": "章节字数，不能小于 0。",
+                    "type": "integer",
+                    "minimum": 0
+                }
+            }
+        },
+        "dto.CreateCharacterRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "ability": {
+                    "description": "角色能力。",
+                    "type": "string"
+                },
+                "appearance": {
+                    "description": "角色外貌。",
+                    "type": "string"
+                },
+                "appearanceImgUrl": {
+                    "description": "角色形象图 URL。",
+                    "type": "string"
+                },
+                "background": {
+                    "description": "角色背景。",
+                    "type": "string"
+                },
+                "charactersTags": {
+                    "description": "角色标签。",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "firstAppearanceChapterId": {
+                    "description": "首次出现章节 ID。",
+                    "type": "integer"
+                },
+                "gender": {
+                    "description": "角色性别。",
+                    "type": "string"
+                },
+                "intro": {
+                    "description": "角色介绍。",
+                    "type": "string"
+                },
+                "motivation": {
+                    "description": "角色动机。",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "角色名称，必填。",
+                    "type": "string"
+                },
+                "personality": {
+                    "description": "角色性格。",
+                    "type": "string"
+                },
+                "plotDirection": {
+                    "description": "角色剧情方向。",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "角色状态：1 在线，2 下线。",
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.CreateNovelRequest": {
+            "type": "object",
+            "required": [
+                "title"
+            ],
+            "properties": {
+                "authorName": {
+                    "description": "小说作者。",
+                    "type": "string"
+                },
+                "coverUrl": {
+                    "description": "小说封面 URL。",
+                    "type": "string"
+                },
+                "intro": {
+                    "description": "小说简介。",
+                    "type": "string"
+                },
+                "metadata": {
+                    "description": "小说元数据（标签信息）。",
+                    "type": "object"
+                },
+                "title": {
+                    "description": "书名，必填。",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.PasswordRequest": {
+            "type": "object",
+            "required": [
+                "password"
+            ],
             "properties": {
                 "password": {
+                    "description": "管理员密码，必填。",
                     "type": "string"
+                }
+            }
+        },
+        "dto.QueryAIProviderModelsRequest": {
+            "type": "object",
+            "required": [
+                "apiKey",
+                "baseUrl"
+            ],
+            "properties": {
+                "apiKey": {
+                    "description": "API Key 明文，仅用于本次上游查询，不入库也不返回。",
+                    "type": "string"
+                },
+                "baseUrl": {
+                    "description": "AI 提供商基础 URL，后端会按 OpenAI 兼容协议拼接到 /v1/models。",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.UpdateAIProviderRequest": {
+            "type": "object",
+            "required": [
+                "apiKey",
+                "baseUrl",
+                "name",
+                "providerType"
+            ],
+            "properties": {
+                "apiKey": {
+                    "description": "API Key 明文，必填，业务层会在入库前重新加密。",
+                    "type": "string"
+                },
+                "baseUrl": {
+                    "description": "AI 提供商基础 URL，必填。",
+                    "type": "string"
+                },
+                "configJson": {
+                    "description": "AI 提供商额外配置。",
+                    "type": "object"
+                },
+                "isEnabled": {
+                    "description": "是否启用。",
+                    "type": "boolean"
+                },
+                "maxContextLength": {
+                    "description": "最大上下文长度。",
+                    "type": "integer"
+                },
+                "maxInputTokens": {
+                    "description": "最大输入令牌数。",
+                    "type": "integer"
+                },
+                "maxOutputTokens": {
+                    "description": "最大输出令牌数。",
+                    "type": "integer"
+                },
+                "models": {
+                    "description": "支持的模型列表。",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "name": {
+                    "description": "AI 提供商名称，必填。",
+                    "type": "string"
+                },
+                "providerType": {
+                    "description": "AI 提供商类型，必填。",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.UpdateChapterRequest": {
+            "type": "object",
+            "required": [
+                "chapterNo",
+                "content",
+                "title"
+            ],
+            "properties": {
+                "chapterNo": {
+                    "description": "章节编号，必填且大于 0。",
+                    "type": "integer"
+                },
+                "content": {
+                    "description": "章节内容，必填。",
+                    "type": "string"
+                },
+                "title": {
+                    "description": "章节标题，必填。",
+                    "type": "string"
+                },
+                "wordCount": {
+                    "description": "章节字数，不能小于 0。",
+                    "type": "integer",
+                    "minimum": 0
+                }
+            }
+        },
+        "dto.UpdateCharacterRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "ability": {
+                    "description": "角色能力。",
+                    "type": "string"
+                },
+                "appearance": {
+                    "description": "角色外貌。",
+                    "type": "string"
+                },
+                "appearanceImgUrl": {
+                    "description": "角色形象图 URL。",
+                    "type": "string"
+                },
+                "background": {
+                    "description": "角色背景。",
+                    "type": "string"
+                },
+                "charactersTags": {
+                    "description": "角色标签。",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "firstAppearanceChapterId": {
+                    "description": "首次出现章节 ID。",
+                    "type": "integer"
+                },
+                "gender": {
+                    "description": "角色性别。",
+                    "type": "string"
+                },
+                "intro": {
+                    "description": "角色介绍。",
+                    "type": "string"
+                },
+                "motivation": {
+                    "description": "角色动机。",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "角色名称，必填。",
+                    "type": "string"
+                },
+                "personality": {
+                    "description": "角色性格。",
+                    "type": "string"
+                },
+                "plotDirection": {
+                    "description": "角色剧情方向。",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "角色状态：1 在线，2 下线。",
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.UpdateNovelRequest": {
+            "type": "object",
+            "required": [
+                "id",
+                "title"
+            ],
+            "properties": {
+                "authorName": {
+                    "description": "小说作者。",
+                    "type": "string"
+                },
+                "coverUrl": {
+                    "description": "小说封面 URL。",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "小说 ID，必填。",
+                    "type": "integer"
+                },
+                "intro": {
+                    "description": "小说简介。",
+                    "type": "string"
+                },
+                "metadata": {
+                    "description": "小说元数据（标签信息）。",
+                    "type": "object"
+                },
+                "title": {
+                    "description": "书名，必填。",
+                    "type": "string"
+                },
+                "wordCount": {
+                    "description": "小说字数。",
+                    "type": "integer",
+                    "minimum": 0
                 }
             }
         },
@@ -2161,124 +2441,6 @@ const docTemplate = `{
                 }
             }
         },
-        "novel.createChapterRequest": {
-            "type": "object",
-            "required": [
-                "chapterNo",
-                "content",
-                "title",
-                "wordCount"
-            ],
-            "properties": {
-                "chapterNo": {
-                    "description": "章节编号，必填且大于 0",
-                    "type": "integer"
-                },
-                "content": {
-                    "description": "章节内容，必填",
-                    "type": "string"
-                },
-                "title": {
-                    "description": "章节标题，必填",
-                    "type": "string"
-                },
-                "wordCount": {
-                    "description": "章节字数，必填；用指针是为了允许前端传 0",
-                    "type": "integer"
-                }
-            }
-        },
-        "novel.createCharacterRequest": {
-            "type": "object",
-            "required": [
-                "name"
-            ],
-            "properties": {
-                "ability": {
-                    "description": "角色能力",
-                    "type": "string"
-                },
-                "appearance": {
-                    "description": "角色外貌",
-                    "type": "string"
-                },
-                "appearanceImgUrl": {
-                    "description": "角色形象图 URL",
-                    "type": "string"
-                },
-                "background": {
-                    "description": "角色背景",
-                    "type": "string"
-                },
-                "charactersTags": {
-                    "description": "角色标签",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "firstAppearanceChapterId": {
-                    "description": "首次出现章节 ID",
-                    "type": "integer"
-                },
-                "gender": {
-                    "description": "角色性别",
-                    "type": "string"
-                },
-                "intro": {
-                    "description": "角色介绍",
-                    "type": "string"
-                },
-                "motivation": {
-                    "description": "角色动机",
-                    "type": "string"
-                },
-                "name": {
-                    "description": "角色名称，必填",
-                    "type": "string"
-                },
-                "personality": {
-                    "description": "角色性格",
-                    "type": "string"
-                },
-                "plotDirection": {
-                    "description": "角色剧情方向",
-                    "type": "string"
-                },
-                "status": {
-                    "description": "角色状态：1 在线，2 下线",
-                    "type": "integer"
-                }
-            }
-        },
-        "novel.createNovelRequest": {
-            "type": "object",
-            "required": [
-                "title"
-            ],
-            "properties": {
-                "authorName": {
-                    "description": "小说作者",
-                    "type": "string"
-                },
-                "coverUrl": {
-                    "description": "小说封面 URL",
-                    "type": "string"
-                },
-                "intro": {
-                    "description": "小说简介",
-                    "type": "string"
-                },
-                "metadata": {
-                    "description": "小说元数据（标签信息）",
-                    "type": "object"
-                },
-                "title": {
-                    "description": "书名，必填",
-                    "type": "string"
-                }
-            }
-        },
         "novel.nextChapterNoResponse": {
             "type": "object",
             "properties": {
@@ -2341,119 +2503,6 @@ const docTemplate = `{
                 "wordCount": {
                     "description": "小说字数",
                     "type": "integer"
-                }
-            }
-        },
-        "novel.updateChapterRequest": {
-            "type": "object",
-            "properties": {
-                "chapterNo": {
-                    "description": "章节编号",
-                    "type": "integer"
-                },
-                "content": {
-                    "description": "章节内容",
-                    "type": "string"
-                },
-                "title": {
-                    "description": "章节标题",
-                    "type": "string"
-                },
-                "wordCount": {
-                    "description": "章节字数",
-                    "type": "integer"
-                }
-            }
-        },
-        "novel.updateCharacterRequest": {
-            "type": "object",
-            "properties": {
-                "ability": {
-                    "description": "角色能力",
-                    "type": "string"
-                },
-                "appearance": {
-                    "description": "角色外貌",
-                    "type": "string"
-                },
-                "appearanceImgUrl": {
-                    "description": "角色形象图 URL",
-                    "type": "string"
-                },
-                "background": {
-                    "description": "角色背景",
-                    "type": "string"
-                },
-                "charactersTags": {
-                    "description": "角色标签；使用指针用于区分“未传”和“传空数组”",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "firstAppearanceChapterId": {
-                    "description": "首次出现章节 ID",
-                    "type": "integer"
-                },
-                "gender": {
-                    "description": "角色性别",
-                    "type": "string"
-                },
-                "intro": {
-                    "description": "角色介绍",
-                    "type": "string"
-                },
-                "motivation": {
-                    "description": "角色动机",
-                    "type": "string"
-                },
-                "name": {
-                    "description": "角色名称",
-                    "type": "string"
-                },
-                "personality": {
-                    "description": "角色性格",
-                    "type": "string"
-                },
-                "plotDirection": {
-                    "description": "角色剧情方向",
-                    "type": "string"
-                },
-                "status": {
-                    "description": "角色状态：1 在线，2 下线",
-                    "type": "integer"
-                }
-            }
-        },
-        "novel.updateNovelRequest": {
-            "type": "object",
-            "required": [
-                "id"
-            ],
-            "properties": {
-                "authorName": {
-                    "description": "小说作者",
-                    "type": "string"
-                },
-                "coverUrl": {
-                    "description": "小说封面 URL",
-                    "type": "string"
-                },
-                "id": {
-                    "description": "小说 ID，必填",
-                    "type": "integer"
-                },
-                "intro": {
-                    "description": "小说简介",
-                    "type": "string"
-                },
-                "metadata": {
-                    "description": "小说元数据（标签信息）",
-                    "type": "object"
-                },
-                "title": {
-                    "description": "书名",
-                    "type": "string"
                 }
             }
         },

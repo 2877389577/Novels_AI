@@ -5,8 +5,8 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"net/http"
-	"strings"
 
+	"Novels_AI/backend/internal/data/dto"
 	"Novels_AI/backend/internal/pkg/common"
 
 	"github.com/gin-gonic/gin"
@@ -18,12 +18,8 @@ type LoginService struct {
 
 type LoginUseCase interface {
 	IsPasswordInitialized(ctx context.Context) (bool, error)
-	SetPassword(ctx context.Context, passwd string) error
-	Login(ctx context.Context, passwd string) error
-}
-
-type passwordRequest struct {
-	Password string `json:"password"`
+	SetPassword(ctx context.Context, params dto.PasswordRequest) error
+	Login(ctx context.Context, params dto.PasswordRequest) error
 }
 
 func NewLoginService(useCase LoginUseCase) *LoginService {
@@ -56,18 +52,18 @@ func (service *LoginService) CheckInitialPassword(c *gin.Context) {
 // @Tags login
 // @Accept json
 // @Produce json
-// @Param password body passwordRequest true "Password"
+// @Param password body dto.PasswordRequest true "Password"
 // @Success 200 {object} common.Response "code = 0，表示设置成功;code = 1001，表示密码已设置"
 // @Failure 400 {object} common.Response "请求参数错误"
 // @Failure 500 {object} common.SystemError "系统错误"
 // @Router /login/password [post]
 func (service *LoginService) SetPassword(c *gin.Context) {
-	passwd, ok := bindPassword(c)
+	request, ok := bindPassword(c)
 	if !ok {
 		return
 	}
 
-	if err := service.useCase.SetPassword(c.Request.Context(), passwd); err != nil {
+	if err := service.useCase.SetPassword(c.Request.Context(), request); err != nil {
 		_ = c.Error(err)
 		return
 	}
@@ -83,17 +79,17 @@ func (service *LoginService) SetPassword(c *gin.Context) {
 // @Tags login
 // @Accept       json
 // @Produce      json
-// @Param        password   body      passwordRequest true "密码"
+// @Param        password   body      dto.PasswordRequest true "密码"
 // @Success      200 {object} common.Response "code = 0，表示登陆成功; code = 1000，表示没有初始密码,登陆失败"
 // @Failure      500  {object}  common.SystemError "系统错误"
 // @Router      /login [post]
 func (service *LoginService) Login(c *gin.Context) {
-	passwd, ok := bindPassword(c)
+	request, ok := bindPassword(c)
 	if !ok {
 		return
 	}
 
-	if err := service.useCase.Login(c.Request.Context(), passwd); err != nil {
+	if err := service.useCase.Login(c.Request.Context(), request); err != nil {
 		_ = c.Error(err)
 		return
 	}
@@ -118,26 +114,17 @@ func (service *LoginService) Login(c *gin.Context) {
 	})
 }
 
-func bindPassword(c *gin.Context) (string, bool) {
-	var request passwordRequest
+func bindPassword(c *gin.Context) (dto.PasswordRequest, bool) {
+	var request dto.PasswordRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, &common.Response{
 			Code: http.StatusBadRequest,
 			Msg:  "请求参数错误",
 		})
-		return "", false
+		return dto.PasswordRequest{}, false
 	}
 
-	passwd := strings.TrimSpace(request.Password)
-	if passwd == "" {
-		c.JSON(http.StatusBadRequest, &common.Response{
-			Code: http.StatusBadRequest,
-			Msg:  "密码不能为空",
-		})
-		return "", false
-	}
-
-	return passwd, true
+	return request, true
 }
 
 func newSessionID() (string, error) {

@@ -1,26 +1,15 @@
 # 项目目录结构
 
-当前仓库是 Go module `Novels_AI/backend`，核心代码按 Go 服务端常见分层组织：
-
-```text
-.
-├── cmd/novels_ai/          # 服务启动入口，`main.go` 负责组装并启动应用
-├── config/                 # 运行配置文件，包含默认配置和开发环境配置
-├── docs/                   # Swagger/OpenAPI 文档产物
-├── internal/               # 后端核心实现，仅供本模块内部引用
-│   ├── biz/login/          # 登录相关业务逻辑及测试
-│   ├── bootstrap/          # 配置、数据库、日志等启动初始化逻辑
-│   ├── data/               # 数据访问层
-│   │   └── model/          # 数据模型定义，如管理员和小说模型
-│   ├── middleware/         # HTTP 中间件，如错误处理、限流、请求 ID
-│   ├── pkg/common/         # 通用错误、响应和会话辅助能力
-│   └── service/            # 路由注册和接口服务层
-│       └── login/          # 登录接口服务实现
-├── go.mod / go.sum         # Go module 依赖声明与锁定文件
-├── README.md               # 项目简要说明
-```
-
 新增代码时优先遵循现有分层：入口组装放在 `cmd/novels_ai`，配置和基础设施初始化放在 `internal/bootstrap`，业务规则放在 `internal/biz`，数据访问放在 `internal/data`，HTTP 路由与接口适配放在 `internal/service`，跨层复用的小工具放在 `internal/pkg/common`。
+
+
+# Code Style Constraints
+
+1. Define request parameters uniformly under `internal/data/dto`. The service layer and biz layer should share the same DTOs instead of defining duplicate parameter structs.
+2. The service layer is responsible for receiving requests, binding parameters, and basic parameter validation. Gin's `ShouldBindJSON` can validate based on tags from the `go-playground/validator/v10` library, so do not repeat validation in code unless the user explicitly asks for it.
+3. The biz layer should only contain business logic. Do not perform input validity checks there, so the business code stays lean.
+4. When updating the database, prefer passing the complete model to GORM `Save`. Do not check parameters field by field in the biz layer and manually assemble an update map.
+
 
 # Constraints
 

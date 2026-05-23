@@ -110,26 +110,20 @@ func (d *ChapterData) MaxChapterNo(ctx context.Context, novelID int64) (int, err
 	return maxChapterNo, nil
 }
 
-// Update 在同一个事务里局部更新章节，并按字数差值调整小说总字数。
-func (d *ChapterData) Update(ctx context.Context, novelID int64, chapterID uint, values map[string]any, wordDelta int64) (*Chapter, error) {
+// Update 在同一个事务里全量保存章节，并按字数差值调整小说总字数。
+func (d *ChapterData) Update(ctx context.Context, chapter *Chapter, wordDelta int64) (*Chapter, error) {
 	err := d.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if len(values) > 0 {
-			result := tx.Model(&model.Chapter{}).
-				Where("id = ? AND novel_id = ?", chapterID, novelID).
-				Updates(values)
-			if result.Error != nil {
-				return result.Error
-			}
-
+		if err := tx.Save(chapter).Error; err != nil {
+			return err
 		}
 
-		return updateNovelWordCount(tx, novelID, wordDelta)
+		return updateNovelWordCount(tx, chapter.NovelID, wordDelta)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return d.FindByID(ctx, novelID, chapterID)
+	return d.FindByID(ctx, chapter.NovelID, chapter.ID)
 }
 
 // Delete 使用 GORM 软删除章节，并同步扣减小说总字数。

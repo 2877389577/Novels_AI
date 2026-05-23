@@ -19,13 +19,14 @@ type AIProvider struct {
 
 	APIKeyEncrypted string `gorm:"column:api_key_encrypted;not null;type:text;comment:加密后的API密钥" json:"api_key_encrypted"`
 
-	IsEnabled bool `gorm:"column:is_enabled;not null;default:true;comment:是否启用" json:"is_enabled"`
-
-	Priority int `gorm:"column:priority;not null;default:100;comment:优先级" json:"priority"`
+	IsEnabled bool `gorm:"column:is_enabled;not null;comment:是否启用" json:"is_enabled"`
 
 	ConfigJSON datatypes.JSON `gorm:"column:config_json;type:jsonb;not null;default:'{}';comment:配置JSON" json:"config_json"`
 
-	Models pq.StringArray `gorm:"column:models;type:text;comment:支持的模型列表" json:"models"`
+	Models           pq.StringArray `gorm:"column:models;type:text;comment:支持的模型列表" json:"models"`
+	MaxContextLength int64          `gorm:"column:max_context_length;type:bigint;comment:最大上下文长度" json:"max_context_length"`
+	MaxInputTokens   int            `gorm:"column:max_input_tokens;type:int;comment:最大输入令牌数" json:"max_input_tokens"`
+	MaxOutputTokens  int            `gorm:"column:max_output_tokens;type:int;comment:最大输出令牌数" json:"max_output_tokens"`
 
 	CreatedAt time.Time `gorm:"column:created_at;not null;default:now();comment:创建时间" json:"created_at"`
 

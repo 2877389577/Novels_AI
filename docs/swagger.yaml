@@ -41,6 +41,15 @@ definitions:
       isEnabled:
         description: 是否启用
         type: boolean
+      maxContextLength:
+        description: 最大上下文长度
+        type: integer
+      maxInputTokens:
+        description: 最大输入令牌数
+        type: integer
+      maxOutputTokens:
+        description: 最大输出令牌数
+        type: integer
       models:
         description: 支持的模型列表
         items:
@@ -49,89 +58,11 @@ definitions:
       name:
         description: AI 提供商名称
         type: string
-      priority:
-        description: 优先级
-        type: integer
       providerType:
         description: AI 提供商类型
         type: string
       updatedAt:
         description: 更新时间
-        type: string
-    type: object
-  aiprovider.createAIProviderRequest:
-    properties:
-      apiKey:
-        description: API Key 明文，必填，入库前会加密
-        type: string
-      baseUrl:
-        description: AI 提供商基础 URL，必填
-        type: string
-      configJson:
-        description: AI 提供商额外配置
-        type: object
-      isEnabled:
-        description: 是否启用；不传时默认 true
-        type: boolean
-      models:
-        description: 支持的模型列表
-        items:
-          type: string
-        type: array
-      name:
-        description: AI 提供商名称，必填
-        type: string
-      priority:
-        description: 优先级；不传时默认 100
-        type: integer
-      providerType:
-        description: AI 提供商类型，必填
-        type: string
-    required:
-    - apiKey
-    - baseUrl
-    - name
-    - providerType
-    type: object
-  aiprovider.queryAIProviderModelsRequest:
-    properties:
-      apiKey:
-        description: API Key 明文，仅用于本次上游查询，不入库也不返回。
-        type: string
-      baseUrl:
-        description: AI 提供商基础 URL，后端会按 OpenAI 兼容协议拼接到 /v1/models。
-        type: string
-    required:
-    - apiKey
-    - baseUrl
-    type: object
-  aiprovider.updateAIProviderRequest:
-    properties:
-      apiKey:
-        description: API Key 明文；传入时重新加密，不传则保留原值
-        type: string
-      baseUrl:
-        description: AI 提供商基础 URL
-        type: string
-      configJson:
-        description: AI 提供商额外配置
-        type: object
-      isEnabled:
-        description: 是否启用
-        type: boolean
-      models:
-        description: 支持的模型列表；使用指针区分“未传”和“传空数组”
-        items:
-          type: string
-        type: array
-      name:
-        description: AI 提供商名称
-        type: string
-      priority:
-        description: 优先级
-        type: integer
-      providerType:
-        description: AI 提供商类型
         type: string
     type: object
   common.Response:
@@ -154,10 +85,285 @@ definitions:
         description: Msg 是展示给调用方的错误提示，保持和业务错误定义在同一处维护。
         type: string
     type: object
-  login.passwordRequest:
+  dto.CreateAIProviderRequest:
+    properties:
+      apiKey:
+        description: API Key 明文，必填，业务层会在入库前加密。
+        type: string
+      baseUrl:
+        description: AI 提供商基础 URL，必填。
+        type: string
+      configJson:
+        description: AI 提供商额外配置。
+        type: object
+      isEnabled:
+        description: 是否启用；不传时由业务层默认启用。
+        type: boolean
+      maxContextLength:
+        description: 最大上下文长度，不传时使用数据库字段零值。
+        type: integer
+      maxInputTokens:
+        description: 最大输入令牌数，不传时使用数据库字段零值。
+        type: integer
+      maxOutputTokens:
+        description: 最大输出令牌数，不传时使用数据库字段零值。
+        type: integer
+      models:
+        description: 支持的模型列表。
+        items:
+          type: string
+        type: array
+      name:
+        description: AI 提供商名称，必填。
+        type: string
+      providerType:
+        description: AI 提供商类型，必填。
+        type: string
+    required:
+    - apiKey
+    - baseUrl
+    - name
+    - providerType
+    type: object
+  dto.CreateChapterRequest:
+    properties:
+      chapterNo:
+        description: 章节编号，必填且大于 0。
+        type: integer
+      content:
+        description: 章节内容，必填。
+        type: string
+      title:
+        description: 章节标题，必填。
+        type: string
+      wordCount:
+        description: 章节字数，不能小于 0。
+        minimum: 0
+        type: integer
+    required:
+    - chapterNo
+    - content
+    - title
+    type: object
+  dto.CreateCharacterRequest:
+    properties:
+      ability:
+        description: 角色能力。
+        type: string
+      appearance:
+        description: 角色外貌。
+        type: string
+      appearanceImgUrl:
+        description: 角色形象图 URL。
+        type: string
+      background:
+        description: 角色背景。
+        type: string
+      charactersTags:
+        description: 角色标签。
+        items:
+          type: string
+        type: array
+      firstAppearanceChapterId:
+        description: 首次出现章节 ID。
+        type: integer
+      gender:
+        description: 角色性别。
+        type: string
+      intro:
+        description: 角色介绍。
+        type: string
+      motivation:
+        description: 角色动机。
+        type: string
+      name:
+        description: 角色名称，必填。
+        type: string
+      personality:
+        description: 角色性格。
+        type: string
+      plotDirection:
+        description: 角色剧情方向。
+        type: string
+      status:
+        description: 角色状态：1 在线，2 下线。
+        type: integer
+    required:
+    - name
+    type: object
+  dto.CreateNovelRequest:
+    properties:
+      authorName:
+        description: 小说作者。
+        type: string
+      coverUrl:
+        description: 小说封面 URL。
+        type: string
+      intro:
+        description: 小说简介。
+        type: string
+      metadata:
+        description: 小说元数据（标签信息）。
+        type: object
+      title:
+        description: 书名，必填。
+        type: string
+    required:
+    - title
+    type: object
+  dto.PasswordRequest:
     properties:
       password:
+        description: 管理员密码，必填。
         type: string
+    required:
+    - password
+    type: object
+  dto.QueryAIProviderModelsRequest:
+    properties:
+      apiKey:
+        description: API Key 明文，仅用于本次上游查询，不入库也不返回。
+        type: string
+      baseUrl:
+        description: AI 提供商基础 URL，后端会按 OpenAI 兼容协议拼接到 /v1/models。
+        type: string
+    required:
+    - apiKey
+    - baseUrl
+    type: object
+  dto.UpdateAIProviderRequest:
+    properties:
+      apiKey:
+        description: API Key 明文，必填，业务层会在入库前重新加密。
+        type: string
+      baseUrl:
+        description: AI 提供商基础 URL，必填。
+        type: string
+      configJson:
+        description: AI 提供商额外配置。
+        type: object
+      isEnabled:
+        description: 是否启用。
+        type: boolean
+      maxContextLength:
+        description: 最大上下文长度。
+        type: integer
+      maxInputTokens:
+        description: 最大输入令牌数。
+        type: integer
+      maxOutputTokens:
+        description: 最大输出令牌数。
+        type: integer
+      models:
+        description: 支持的模型列表。
+        items:
+          type: string
+        type: array
+      name:
+        description: AI 提供商名称，必填。
+        type: string
+      providerType:
+        description: AI 提供商类型，必填。
+        type: string
+    required:
+    - apiKey
+    - baseUrl
+    - name
+    - providerType
+    type: object
+  dto.UpdateChapterRequest:
+    properties:
+      chapterNo:
+        description: 章节编号，必填且大于 0。
+        type: integer
+      content:
+        description: 章节内容，必填。
+        type: string
+      title:
+        description: 章节标题，必填。
+        type: string
+      wordCount:
+        description: 章节字数，不能小于 0。
+        minimum: 0
+        type: integer
+    required:
+    - chapterNo
+    - content
+    - title
+    type: object
+  dto.UpdateCharacterRequest:
+    properties:
+      ability:
+        description: 角色能力。
+        type: string
+      appearance:
+        description: 角色外貌。
+        type: string
+      appearanceImgUrl:
+        description: 角色形象图 URL。
+        type: string
+      background:
+        description: 角色背景。
+        type: string
+      charactersTags:
+        description: 角色标签。
+        items:
+          type: string
+        type: array
+      firstAppearanceChapterId:
+        description: 首次出现章节 ID。
+        type: integer
+      gender:
+        description: 角色性别。
+        type: string
+      intro:
+        description: 角色介绍。
+        type: string
+      motivation:
+        description: 角色动机。
+        type: string
+      name:
+        description: 角色名称，必填。
+        type: string
+      personality:
+        description: 角色性格。
+        type: string
+      plotDirection:
+        description: 角色剧情方向。
+        type: string
+      status:
+        description: 角色状态：1 在线，2 下线。
+        type: integer
+    required:
+    - name
+    type: object
+  dto.UpdateNovelRequest:
+    properties:
+      authorName:
+        description: 小说作者。
+        type: string
+      coverUrl:
+        description: 小说封面 URL。
+        type: string
+      id:
+        description: 小说 ID，必填。
+        type: integer
+      intro:
+        description: 小说简介。
+        type: string
+      metadata:
+        description: 小说元数据（标签信息）。
+        type: object
+      title:
+        description: 书名，必填。
+        type: string
+      wordCount:
+        description: 小说字数。
+        minimum: 0
+        type: integer
+    required:
+    - id
+    - title
     type: object
   novel.chapterListItemResponse:
     properties:
@@ -315,92 +521,6 @@ definitions:
         description: 更新时间
         type: string
     type: object
-  novel.createChapterRequest:
-    properties:
-      chapterNo:
-        description: 章节编号，必填且大于 0
-        type: integer
-      content:
-        description: 章节内容，必填
-        type: string
-      title:
-        description: 章节标题，必填
-        type: string
-      wordCount:
-        description: 章节字数，必填；用指针是为了允许前端传 0
-        type: integer
-    required:
-    - chapterNo
-    - content
-    - title
-    - wordCount
-    type: object
-  novel.createCharacterRequest:
-    properties:
-      ability:
-        description: 角色能力
-        type: string
-      appearance:
-        description: 角色外貌
-        type: string
-      appearanceImgUrl:
-        description: 角色形象图 URL
-        type: string
-      background:
-        description: 角色背景
-        type: string
-      charactersTags:
-        description: 角色标签
-        items:
-          type: string
-        type: array
-      firstAppearanceChapterId:
-        description: 首次出现章节 ID
-        type: integer
-      gender:
-        description: 角色性别
-        type: string
-      intro:
-        description: 角色介绍
-        type: string
-      motivation:
-        description: 角色动机
-        type: string
-      name:
-        description: 角色名称，必填
-        type: string
-      personality:
-        description: 角色性格
-        type: string
-      plotDirection:
-        description: 角色剧情方向
-        type: string
-      status:
-        description: 角色状态：1 在线，2 下线
-        type: integer
-    required:
-    - name
-    type: object
-  novel.createNovelRequest:
-    properties:
-      authorName:
-        description: 小说作者
-        type: string
-      coverUrl:
-        description: 小说封面 URL
-        type: string
-      intro:
-        description: 小说简介
-        type: string
-      metadata:
-        description: 小说元数据（标签信息）
-        type: object
-      title:
-        description: 书名，必填
-        type: string
-    required:
-    - title
-    type: object
   novel.nextChapterNoResponse:
     properties:
       chapterNo:
@@ -445,88 +565,6 @@ definitions:
       wordCount:
         description: 小说字数
         type: integer
-    type: object
-  novel.updateChapterRequest:
-    properties:
-      chapterNo:
-        description: 章节编号
-        type: integer
-      content:
-        description: 章节内容
-        type: string
-      title:
-        description: 章节标题
-        type: string
-      wordCount:
-        description: 章节字数
-        type: integer
-    type: object
-  novel.updateCharacterRequest:
-    properties:
-      ability:
-        description: 角色能力
-        type: string
-      appearance:
-        description: 角色外貌
-        type: string
-      appearanceImgUrl:
-        description: 角色形象图 URL
-        type: string
-      background:
-        description: 角色背景
-        type: string
-      charactersTags:
-        description: 角色标签；使用指针用于区分“未传”和“传空数组”
-        items:
-          type: string
-        type: array
-      firstAppearanceChapterId:
-        description: 首次出现章节 ID
-        type: integer
-      gender:
-        description: 角色性别
-        type: string
-      intro:
-        description: 角色介绍
-        type: string
-      motivation:
-        description: 角色动机
-        type: string
-      name:
-        description: 角色名称
-        type: string
-      personality:
-        description: 角色性格
-        type: string
-      plotDirection:
-        description: 角色剧情方向
-        type: string
-      status:
-        description: 角色状态：1 在线，2 下线
-        type: integer
-    type: object
-  novel.updateNovelRequest:
-    properties:
-      authorName:
-        description: 小说作者
-        type: string
-      coverUrl:
-        description: 小说封面 URL
-        type: string
-      id:
-        description: 小说 ID，必填
-        type: integer
-      intro:
-        description: 小说简介
-        type: string
-      metadata:
-        description: 小说元数据（标签信息）
-        type: object
-      title:
-        description: 书名
-        type: string
-    required:
-    - id
     type: object
   upload.uploadResponse:
     properties:
@@ -603,7 +641,7 @@ paths:
         name: provider
         required: true
         schema:
-          $ref: '#/definitions/aiprovider.createAIProviderRequest'
+          $ref: '#/definitions/dto.CreateAIProviderRequest'
       produces:
       - application/json
       responses:
@@ -708,7 +746,7 @@ paths:
     put:
       consumes:
       - application/json
-      description: 按 ID 局部更新 AI 提供商，传入 API Key 时重新加密
+      description: 按 ID 全量更新 AI 提供商，API Key 会重新加密
       parameters:
       - description: AI 提供商 ID
         in: path
@@ -720,7 +758,7 @@ paths:
         name: provider
         required: true
         schema:
-          $ref: '#/definitions/aiprovider.updateAIProviderRequest'
+          $ref: '#/definitions/dto.UpdateAIProviderRequest'
       produces:
       - application/json
       responses:
@@ -763,7 +801,7 @@ paths:
         name: provider
         required: true
         schema:
-          $ref: '#/definitions/aiprovider.queryAIProviderModelsRequest'
+          $ref: '#/definitions/dto.QueryAIProviderModelsRequest'
       produces:
       - application/json
       responses:
@@ -806,7 +844,7 @@ paths:
         name: password
         required: true
         schema:
-          $ref: '#/definitions/login.passwordRequest'
+          $ref: '#/definitions/dto.PasswordRequest'
       produces:
       - application/json
       responses:
@@ -856,7 +894,7 @@ paths:
         name: password
         required: true
         schema:
-          $ref: '#/definitions/login.passwordRequest'
+          $ref: '#/definitions/dto.PasswordRequest'
       produces:
       - application/json
       responses:
@@ -924,7 +962,7 @@ paths:
         name: novel
         required: true
         schema:
-          $ref: '#/definitions/novel.createNovelRequest'
+          $ref: '#/definitions/dto.CreateNovelRequest'
       produces:
       - application/json
       responses:
@@ -1089,7 +1127,7 @@ paths:
         name: chapter
         required: true
         schema:
-          $ref: '#/definitions/novel.createChapterRequest'
+          $ref: '#/definitions/dto.CreateChapterRequest'
       produces:
       - application/json
       responses:
@@ -1212,7 +1250,7 @@ paths:
     put:
       consumes:
       - application/json
-      description: 局部更新章节，并按章节字数差值同步小说总字数
+      description: 全量更新章节，并按章节字数差值同步小说总字数
       parameters:
       - description: 小说 ID
         in: path
@@ -1229,7 +1267,7 @@ paths:
         name: chapter
         required: true
         schema:
-          $ref: '#/definitions/novel.updateChapterRequest'
+          $ref: '#/definitions/dto.UpdateChapterRequest'
       produces:
       - application/json
       responses:
@@ -1368,7 +1406,7 @@ paths:
         name: character
         required: true
         schema:
-          $ref: '#/definitions/novel.createCharacterRequest'
+          $ref: '#/definitions/dto.CreateCharacterRequest'
       produces:
       - application/json
       responses:
@@ -1487,7 +1525,7 @@ paths:
     put:
       consumes:
       - application/json
-      description: 局部更新指定小说下的角色资料
+      description: 全量更新指定小说下的角色资料
       parameters:
       - description: 小说 ID
         in: path
@@ -1504,7 +1542,7 @@ paths:
         name: character
         required: true
         schema:
-          $ref: '#/definitions/novel.updateCharacterRequest'
+          $ref: '#/definitions/dto.UpdateCharacterRequest'
       produces:
       - application/json
       responses:
@@ -1540,14 +1578,14 @@ paths:
     put:
       consumes:
       - application/json
-      description: 按 ID 局部更新小说
+      description: 按 ID 全量更新小说
       parameters:
       - description: 小说信息
         in: body
         name: novel
         required: true
         schema:
-          $ref: '#/definitions/novel.updateNovelRequest'
+          $ref: '#/definitions/dto.UpdateNovelRequest'
       produces:
       - application/json
       responses:

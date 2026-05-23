@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"Novels_AI/backend/internal/data"
+	"Novels_AI/backend/internal/data/dto"
 	"Novels_AI/backend/internal/pkg/common"
 
 	"github.com/lib/pq"
@@ -20,12 +21,6 @@ import (
 )
 
 const (
-	defaultPage     = 1
-	defaultPageSize = 10
-	maxPageSize     = 100
-
-	defaultAIProviderPriority = 100
-
 	defaultModelQueryTimeout = 30 * time.Second
 )
 
@@ -45,9 +40,10 @@ type ModelHTTPClient interface {
 // AIProviderRepo 描述 AI 提供商业务依赖的数据访问能力。
 type AIProviderRepo interface {
 	Create(ctx context.Context, provider *data.AIProvider) (*data.AIProvider, error)
-	List(ctx context.Context, offset, limit int) ([]data.AIProvider, int64, error)
+	List(ctx context.Context, offset, limit int) ([]*data.AIProvider, int64, error)
 	FindByID(ctx context.Context, id int64) (*data.AIProvider, error)
-	Update(ctx context.Context, id int64, values map[string]any) (*data.AIProvider, error)
+	FindEnabled(ctx context.Context) (*data.AIProvider, error)
+	Update(ctx context.Context, provider *data.AIProvider) (*data.AIProvider, error)
 	Delete(ctx context.Context, id int64) error
 }
 
@@ -57,36 +53,8 @@ type AIProviderDetail struct {
 	APIKey   string
 }
 
-type CreateAIProviderParams struct {
-	Name         string
-	ProviderType string
-	BaseURL      string
-	APIKey       string
-	IsEnabled    *bool
-	Priority     *int
-	ConfigJSON   datatypes.JSON
-	Models       []string
-}
-
-type UpdateAIProviderParams struct {
-	ID           int64
-	Name         *string
-	ProviderType *string
-	BaseURL      *string
-	APIKey       *string
-	IsEnabled    *bool
-	Priority     *int
-	ConfigJSON   *datatypes.JSON
-	Models       *[]string
-}
-
-type QueryAIProviderModelsParams struct {
-	BaseURL string
-	APIKey  string
-}
-
 type ListAIProviderResult struct {
-	Items    []data.AIProvider
+	Items    []*data.AIProvider
 	Total    int64
 	Page     int
 	PageSize int
@@ -107,49 +75,32 @@ func NewAIProviderUseCase(repo AIProviderRepo, cipher APIKeyCipher) *AIProviderU
 }
 
 // Create 整理默认值、加密 API Key 后创建 AI 提供商。
-func (uc *AIProviderUseCase) Create(ctx context.Context, params CreateAIProviderParams) (*AIProviderDetail, error) {
-	name, err := normalizeRequiredString(params.Name, common.AIProviderNameRequired)
-	if err != nil {
-		return nil, err
-	}
-	providerType, err := normalizeRequiredString(params.ProviderType, common.AIProviderTypeRequired)
-	if err != nil {
-		return nil, err
-	}
-	baseURL, err := normalizeRequiredString(params.BaseURL, common.AIProviderBaseURLRequired)
-	if err != nil {
-		return nil, err
-	}
-	apiKey, err := normalizeRequiredString(params.APIKey, common.AIProviderAPIKeyRequired)
-	if err != nil {
-		return nil, err
+func (uc *AIProviderUseCase) Create(ctx context.Context, params dto.CreateAIProviderRequest) (*AIProviderDetail, error) {
+	isEnabled := params.IsEnabled
+	if isEnabled {
+		if err := uc.ensureEnabledProviderUnique(ctx, 0); err != nil {
+			slog.ErrorContext(ctx, "确保 AI 提供商启用唯一性失败", "err", err)
+			return nil, err
+		}
 	}
 
-	encrypted, err := uc.cipher.Encrypt(apiKey)
+	encrypted, err := uc.cipher.Encrypt(params.APIKey)
 	if err != nil {
 		slog.ErrorContext(ctx, "加密 AI 提供商 API Key 失败", "err", err)
 		return nil, err
 	}
 
-	isEnabled := true
-	if params.IsEnabled != nil {
-		isEnabled = *params.IsEnabled
-	}
-
-	priority := defaultAIProviderPriority
-	if params.Priority != nil {
-		priority = *params.Priority
-	}
-
 	provider, err := uc.repo.Create(ctx, &data.AIProvider{
-		Name:            name,
-		ProviderType:    providerType,
-		BaseURL:         baseURL,
-		APIKeyEncrypted: encrypted,
-		IsEnabled:       isEnabled,
-		Priority:        priority,
-		ConfigJSON:      normalizeConfigJSON(params.ConfigJSON),
-		Models:          normalizeModels(params.Models),
+		Name:             params.Name,
+		ProviderType:     params.ProviderType,
+		BaseURL:          params.BaseURL,
+		APIKeyEncrypted:  encrypted,
+		IsEnabled:        isEnabled,
+		ConfigJSON:       normalizeConfigJSON(params.ConfigJSON.Value),
+		Models:           normalizeModels(params.Models),
+		MaxContextLength: params.MaxContextLength,
+		MaxInputTokens:   params.MaxInputTokens,
+		MaxOutputTokens:  params.MaxOutputTokens,
 	})
 	if err != nil {
 		slog.ErrorContext(ctx, "新增 AI 提供商失败", "err", err)
@@ -161,7 +112,6 @@ func (uc *AIProviderUseCase) Create(ctx context.Context, params CreateAIProvider
 
 // List 按分页参数查询 AI 提供商列表，列表不解密 API Key。
 func (uc *AIProviderUseCase) List(ctx context.Context, page, pageSize int) (*ListAIProviderResult, error) {
-	page, pageSize = normalizePagination(page, pageSize)
 	offset := (page - 1) * pageSize
 
 	items, total, err := uc.repo.List(ctx, offset, pageSize)
@@ -171,6 +121,14 @@ func (uc *AIProviderUseCase) List(ctx context.Context, page, pageSize int) (*Lis
 		}
 		slog.ErrorContext(ctx, "查询 AI 提供商列表失败", "err", err)
 		return nil, err
+	}
+
+	for _, v := range items {
+		decrypt, err := uc.cipher.Decrypt(v.APIKeyEncrypted)
+		if err != nil {
+			slog.ErrorContext(ctx, "解密 AI 提供商 API Key 失败", "err", err)
+		}
+		v.APIKeyEncrypted = decrypt
 	}
 
 	return &ListAIProviderResult{
@@ -191,56 +149,33 @@ func (uc *AIProviderUseCase) Get(ctx context.Context, id int64) (*AIProviderDeta
 	return uc.toDetail(ctx, provider)
 }
 
-// Update 只更新请求中明确传入的字段，传入 API Key 时会重新加密。
-func (uc *AIProviderUseCase) Update(ctx context.Context, params UpdateAIProviderParams) (*AIProviderDetail, error) {
-	values := make(map[string]any)
-	if params.Name != nil {
-		name, err := normalizeRequiredString(*params.Name, common.AIProviderNameRequired)
-		if err != nil {
+// Update 按请求参数全量保存 AI 提供商，API Key 会在入库前重新加密。
+func (uc *AIProviderUseCase) Update(ctx context.Context, params dto.UpdateAIProviderRequest) (*AIProviderDetail, error) {
+	if params.IsEnabled {
+		if err := uc.ensureEnabledProviderUnique(ctx, params.ID); err != nil {
 			return nil, err
 		}
-		values["name"] = name
-	}
-	if params.ProviderType != nil {
-		providerType, err := normalizeRequiredString(*params.ProviderType, common.AIProviderTypeRequired)
-		if err != nil {
-			return nil, err
-		}
-		values["provider_type"] = providerType
-	}
-	if params.BaseURL != nil {
-		baseURL, err := normalizeRequiredString(*params.BaseURL, common.AIProviderBaseURLRequired)
-		if err != nil {
-			return nil, err
-		}
-		values["base_url"] = baseURL
-	}
-	if params.APIKey != nil {
-		apiKey, err := normalizeRequiredString(*params.APIKey, common.AIProviderAPIKeyRequired)
-		if err != nil {
-			return nil, err
-		}
-		encrypted, err := uc.cipher.Encrypt(apiKey)
-		if err != nil {
-			slog.ErrorContext(ctx, "加密 AI 提供商 API Key 失败", "err", err)
-			return nil, err
-		}
-		values["api_key_encrypted"] = encrypted
-	}
-	if params.IsEnabled != nil {
-		values["is_enabled"] = *params.IsEnabled
-	}
-	if params.Priority != nil {
-		values["priority"] = *params.Priority
-	}
-	if params.ConfigJSON != nil {
-		values["config_json"] = normalizeConfigJSON(*params.ConfigJSON)
-	}
-	if params.Models != nil {
-		values["models"] = normalizeModels(*params.Models)
 	}
 
-	provider, err := uc.repo.Update(ctx, params.ID, values)
+	encrypted, err := uc.cipher.Encrypt(params.APIKey)
+	if err != nil {
+		slog.ErrorContext(ctx, "加密 AI 提供商 API Key 失败", "err", err)
+		return nil, err
+	}
+
+	provider, err := uc.repo.Update(ctx, &data.AIProvider{
+		ID:               params.ID,
+		Name:             params.Name,
+		ProviderType:     params.ProviderType,
+		BaseURL:          params.BaseURL,
+		APIKeyEncrypted:  encrypted,
+		IsEnabled:        params.IsEnabled,
+		ConfigJSON:       normalizeConfigJSON(params.ConfigJSON.Value),
+		Models:           normalizeModels(params.Models),
+		MaxContextLength: params.MaxContextLength,
+		MaxInputTokens:   params.MaxInputTokens,
+		MaxOutputTokens:  params.MaxOutputTokens,
+	})
 	if err != nil {
 		slog.ErrorContext(ctx, "更新 AI 提供商失败", "err", err)
 		return nil, err
@@ -254,18 +189,26 @@ func (uc *AIProviderUseCase) Delete(ctx context.Context, id int64) error {
 	return uc.repo.Delete(ctx, id)
 }
 
-// QueryModels 按 OpenAI 兼容的 /v1/models 协议查询提供商支持的模型 ID 列表。
-func (uc *AIProviderUseCase) QueryModels(ctx context.Context, params QueryAIProviderModelsParams) ([]string, error) {
-	baseURL, err := normalizeRequiredString(params.BaseURL, common.AIProviderBaseURLRequired)
+// ensureEnabledProviderUnique 保证全局只有一个启用中的 AI 提供商；currentID 为当前更新记录，新增时传 0。
+func (uc *AIProviderUseCase) ensureEnabledProviderUnique(ctx context.Context, currentID int64) error {
+	enabledProvider, err := uc.repo.FindEnabled(ctx)
 	if err != nil {
-		return nil, err
+		slog.ErrorContext(ctx, "查询启用中的 AI 提供商失败", "err", err)
+		return err
 	}
-	apiKey, err := normalizeRequiredString(params.APIKey, common.AIProviderAPIKeyRequired)
-	if err != nil {
-		return nil, err
+	if enabledProvider == nil {
+		return nil
+	}
+	if enabledProvider.ID == currentID {
+		return nil
 	}
 
-	modelsURL, err := buildModelsURL(baseURL)
+	return common.AIProviderEnabledConflict
+}
+
+// QueryModels 按 OpenAI 兼容的 /v1/models 协议查询提供商支持的模型 ID 列表。
+func (uc *AIProviderUseCase) QueryModels(ctx context.Context, params dto.QueryAIProviderModelsRequest) ([]string, error) {
+	modelsURL, err := buildModelsURL(params.BaseURL)
 	if err != nil {
 		return nil, common.InvalidRequest
 	}
@@ -274,7 +217,7 @@ func (uc *AIProviderUseCase) QueryModels(ctx context.Context, params QueryAIProv
 	if err != nil {
 		return nil, common.InvalidRequest
 	}
-	request.Header.Set("Authorization", "Bearer "+apiKey)
+	request.Header.Set("Authorization", "Bearer "+params.APIKey)
 	request.Header.Set("Accept", "application/json")
 
 	response, err := uc.modelClient.Do(request)
@@ -350,15 +293,6 @@ func buildModelsURL(baseURL string) (string, error) {
 	return parsed.String(), nil
 }
 
-func normalizeRequiredString(value string, requiredErr error) (string, error) {
-	trimmed := strings.TrimSpace(value)
-	if trimmed == "" {
-		return "", requiredErr
-	}
-
-	return trimmed, nil
-}
-
 func normalizeConfigJSON(config datatypes.JSON) datatypes.JSON {
 	if len(config) == 0 || string(config) == "null" {
 		return datatypes.JSON([]byte("{}"))
@@ -378,18 +312,4 @@ func normalizeModels(models []string) pq.StringArray {
 	}
 
 	return pq.StringArray(normalized)
-}
-
-func normalizePagination(page, pageSize int) (int, int) {
-	if page <= 0 {
-		page = defaultPage
-	}
-	if pageSize <= 0 {
-		pageSize = defaultPageSize
-	}
-	if pageSize > maxPageSize {
-		pageSize = maxPageSize
-	}
-
-	return page, pageSize
 }

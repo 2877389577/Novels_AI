@@ -4,10 +4,9 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"strings"
 
 	"Novels_AI/backend/internal/data"
-	"Novels_AI/backend/internal/pkg/common"
+	"Novels_AI/backend/internal/data/dto"
 
 	"github.com/lib/pq"
 	"gorm.io/gorm"
@@ -26,45 +25,8 @@ type CharacterRepo interface {
 	Create(ctx context.Context, character *data.Character) (*data.Character, error)
 	List(ctx context.Context, novelID int64, offset, limit int) ([]data.Character, int64, error)
 	FindByID(ctx context.Context, novelID int64, characterID uint) (*data.Character, error)
-	Update(ctx context.Context, novelID int64, characterID uint, values map[string]any) (*data.Character, error)
+	Update(ctx context.Context, character *data.Character) (*data.Character, error)
 	Delete(ctx context.Context, novelID int64, characterID uint) error
-}
-
-// CreateCharacterParams 是新增角色时 service 层传入的完整业务参数。
-type CreateCharacterParams struct {
-	NovelID                  int64
-	Name                     string
-	Gender                   string
-	Intro                    string
-	Personality              string
-	Appearance               string
-	Background               string
-	Ability                  string
-	Motivation               string
-	PlotDirection            string
-	FirstAppearanceChapterID *int64
-	AppearanceImgURL         string
-	Status                   *int16
-	CharactersTags           []string
-}
-
-// UpdateCharacterParams 使用指针字段区分“未传”和“传入零值”，支持局部更新。
-type UpdateCharacterParams struct {
-	NovelID                  int64
-	CharacterID              uint
-	Name                     *string
-	Gender                   *string
-	Intro                    *string
-	Personality              *string
-	Appearance               *string
-	Background               *string
-	Ability                  *string
-	Motivation               *string
-	PlotDirection            *string
-	FirstAppearanceChapterID *int64
-	AppearanceImgURL         *string
-	Status                   *int16
-	CharactersTags           *[]string
 }
 
 // ListCharacterResult 包含角色列表和分页信息，列表项字段由 data 层查询列控制。
@@ -83,12 +45,8 @@ func NewCharacterUseCase(novelData NovelRepo, characterData CharacterRepo) *Char
 	}
 }
 
-// CreateCharacter 校验角色基础信息后新增角色，并确认角色归属的小说存在。
-func (uc *CharacterUseCase) CreateCharacter(ctx context.Context, params CreateCharacterParams) (*data.Character, error) {
-	name, err := normalizeCharacterName(params.Name)
-	if err != nil {
-		return nil, err
-	}
+// CreateCharacter 新增角色，并确认角色归属的小说存在。
+func (uc *CharacterUseCase) CreateCharacter(ctx context.Context, params dto.CreateCharacterRequest) (*data.Character, error) {
 	if err := uc.ensureNovelExists(ctx, params.NovelID); err != nil {
 		return nil, err
 	}
@@ -100,7 +58,7 @@ func (uc *CharacterUseCase) CreateCharacter(ctx context.Context, params CreateCh
 
 	character := &data.Character{
 		NovelID:                  params.NovelID,
-		Name:                     name,
+		Name:                     params.Name,
 		Gender:                   params.Gender,
 		Intro:                    params.Intro,
 		Personality:              params.Personality,
@@ -123,7 +81,6 @@ func (uc *CharacterUseCase) ListCharacters(ctx context.Context, novelID int64, p
 		return nil, err
 	}
 
-	page, pageSize = normalizePagination(page, pageSize)
 	offset := (page - 1) * pageSize
 
 	items, total, err := uc.characterData.List(ctx, novelID, offset, pageSize)
@@ -145,54 +102,25 @@ func (uc *CharacterUseCase) GetCharacter(ctx context.Context, novelID int64, cha
 	return uc.characterData.FindByID(ctx, novelID, characterID)
 }
 
-// UpdateCharacter 按请求中出现的字段局部更新角色资料。
-func (uc *CharacterUseCase) UpdateCharacter(ctx context.Context, params UpdateCharacterParams) (*data.Character, error) {
-	values := make(map[string]any)
-	if params.Name != nil {
-		name, err := normalizeCharacterName(*params.Name)
-		if err != nil {
-			return nil, err
-		}
-		values["name"] = name
-	}
-	if params.Gender != nil {
-		values["gender"] = *params.Gender
-	}
-	if params.Intro != nil {
-		values["intro"] = *params.Intro
-	}
-	if params.Personality != nil {
-		values["personality"] = *params.Personality
-	}
-	if params.Appearance != nil {
-		values["appearance"] = *params.Appearance
-	}
-	if params.Background != nil {
-		values["background"] = *params.Background
-	}
-	if params.Ability != nil {
-		values["ability"] = *params.Ability
-	}
-	if params.Motivation != nil {
-		values["motivation"] = *params.Motivation
-	}
-	if params.PlotDirection != nil {
-		values["plot_direction"] = *params.PlotDirection
-	}
-	if params.FirstAppearanceChapterID != nil {
-		values["first_appearance_chapter_id"] = *params.FirstAppearanceChapterID
-	}
-	if params.AppearanceImgURL != nil {
-		values["appearance_img_url"] = *params.AppearanceImgURL
-	}
-	if params.Status != nil {
-		values["status"] = *params.Status
-	}
-	if params.CharactersTags != nil {
-		values["characters_tags"] = pq.StringArray(*params.CharactersTags)
-	}
-
-	return uc.characterData.Update(ctx, params.NovelID, params.CharacterID, values)
+// UpdateCharacter 按请求参数全量保存角色资料。
+func (uc *CharacterUseCase) UpdateCharacter(ctx context.Context, params dto.UpdateCharacterRequest) (*data.Character, error) {
+	return uc.characterData.Update(ctx, &data.Character{
+		Model:                    gorm.Model{ID: params.CharacterID},
+		NovelID:                  params.NovelID,
+		Name:                     params.Name,
+		Gender:                   params.Gender,
+		Intro:                    params.Intro,
+		Personality:              params.Personality,
+		Appearance:               params.Appearance,
+		Background:               params.Background,
+		Ability:                  params.Ability,
+		Motivation:               params.Motivation,
+		PlotDirection:            params.PlotDirection,
+		FirstAppearanceChapterID: params.FirstAppearanceChapterID,
+		AppearanceImgURL:         params.AppearanceImgURL,
+		Status:                   params.Status,
+		CharactersTags:           pq.StringArray(params.CharactersTags),
+	})
 }
 
 // DeleteCharacter 删除指定小说下的角色。
@@ -212,14 +140,4 @@ func (uc *CharacterUseCase) ensureNovelExists(ctx context.Context, novelID int64
 
 	slog.ErrorContext(ctx, "查询小说失败", "err", err)
 	return err
-}
-
-// normalizeCharacterName 统一修剪角色名，并把空角色名转换成公共业务错误。
-func normalizeCharacterName(name string) (string, error) {
-	name = strings.TrimSpace(name)
-	if name == "" {
-		return "", common.CharacterNameRequired
-	}
-
-	return name, nil
 }
