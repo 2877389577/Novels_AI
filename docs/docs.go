@@ -67,18 +67,6 @@ const docTemplate = `{
                             ]
                         }
                     },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "未登录",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
                     "500": {
                         "description": "系统错误",
                         "schema": {
@@ -129,18 +117,6 @@ const docTemplate = `{
                             ]
                         }
                     },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "未登录",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
                     "500": {
                         "description": "系统错误",
                         "schema": {
@@ -181,22 +157,42 @@ const docTemplate = `{
                             "$ref": "#/definitions/common.Response"
                         }
                     },
-                    "400": {
-                        "description": "请求参数错误",
+                    "500": {
+                        "description": "系统错误",
                         "schema": {
-                            "$ref": "#/definitions/common.Response"
+                            "$ref": "#/definitions/common.SystemError"
                         }
-                    },
-                    "401": {
-                        "description": "未登录",
+                    }
+                }
+            }
+        },
+        "/ai-providers/models": {
+            "get": {
+                "description": "查询数据库中当前已启用 ai 提供商保存的模型列表，不请求上游 OpenAI 兼容 /v1/models 接口",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ai-provider"
+                ],
+                "summary": "查询已启用 ai 提供商保存的模型列表",
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "ai 提供商不存在",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/aiprovider.aiProviderModelsResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
@@ -251,28 +247,10 @@ const docTemplate = `{
                             ]
                         }
                     },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "未登录",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
                     "500": {
                         "description": "系统错误",
                         "schema": {
                             "$ref": "#/definitions/common.SystemError"
-                        }
-                    },
-                    "502": {
-                        "description": "ai 提供商模型查询失败",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
                         }
                     }
                 }
@@ -314,24 +292,6 @@ const docTemplate = `{
                                     }
                                 }
                             ]
-                        }
-                    },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "未登录",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "ai 提供商不存在",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
                         }
                     },
                     "500": {
@@ -391,24 +351,6 @@ const docTemplate = `{
                             ]
                         }
                     },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "未登录",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "ai 提供商不存在",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
                     "500": {
                         "description": "系统错误",
                         "schema": {
@@ -438,24 +380,6 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "未登录",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "ai 提供商不存在",
                         "schema": {
                             "$ref": "#/definitions/common.Response"
                         }
@@ -711,6 +635,63 @@ const docTemplate = `{
                         "description": "未登录",
                         "schema": {
                             "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "系统错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.SystemError"
+                        }
+                    }
+                }
+            }
+        },
+        "/novels/chapters/{id}/characters/generate-card": {
+            "get": {
+                "description": "使用数据库中当前启用的 AI 提供商和指定模型，分析章节正文并生成角色卡片列表",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "character"
+                ],
+                "summary": "根据章节内容生成角色卡片",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "章节 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "大模型名称",
+                        "name": "modelName",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/ai_tools.CharacterCardTool"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
@@ -1405,18 +1386,6 @@ const docTemplate = `{
                             "$ref": "#/definitions/common.Response"
                         }
                     },
-                    "401": {
-                        "description": "未登录",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "小说不存在",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
                     "500": {
                         "description": "系统错误",
                         "schema": {
@@ -1480,18 +1449,6 @@ const docTemplate = `{
                             "$ref": "#/definitions/common.Response"
                         }
                     },
-                    "401": {
-                        "description": "未登录",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "小说不存在",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
                     "500": {
                         "description": "系统错误",
                         "schema": {
@@ -1548,18 +1505,6 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "请求参数错误",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "未登录",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "角色不存在",
                         "schema": {
                             "$ref": "#/definitions/common.Response"
                         }
@@ -1634,18 +1579,6 @@ const docTemplate = `{
                             "$ref": "#/definitions/common.Response"
                         }
                     },
-                    "401": {
-                        "description": "未登录",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "角色不存在",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
                     "500": {
                         "description": "系统错误",
                         "schema": {
@@ -1688,18 +1621,6 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "请求参数错误",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "未登录",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "角色不存在",
                         "schema": {
                             "$ref": "#/definitions/common.Response"
                         }
@@ -1777,6 +1698,29 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "ai_tools.CharacterCardTool": {
+            "type": "object",
+            "properties": {
+                "ability": {
+                    "type": "string"
+                },
+                "appearance": {
+                    "type": "string"
+                },
+                "gender": {
+                    "type": "string"
+                },
+                "intro": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "personality": {
+                    "type": "string"
+                }
+            }
+        },
         "aiprovider.aiProviderListResponse": {
             "type": "object",
             "properties": {

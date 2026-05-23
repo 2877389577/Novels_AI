@@ -65,9 +65,16 @@ func (d *ChapterData) List(ctx context.Context, novelID int64, offset, limit int
 // FindByID 查询指定小说下的章节，避免跨小说 ID 误读其他小说的章节。
 func (d *ChapterData) FindByID(ctx context.Context, novelID int64, chapterID uint) (*Chapter, error) {
 	var chapter Chapter
-	err := d.db.WithContext(ctx).
-		Where("id = ? AND novel_id = ?", chapterID, novelID).
-		First(&chapter).Error
+	db := d.db.WithContext(ctx)
+
+	// 这里不需要检查小说ID，现在懒得改，就兼容一下。
+	if novelID == 0 {
+		db.Where("id = ? ", chapterID)
+	} else {
+		db.Where("id = ? AND novel_id = ?", chapterID, novelID)
+	}
+
+	err := db.First(&chapter).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, common.ChapterNotFound

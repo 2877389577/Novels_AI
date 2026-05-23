@@ -1,6 +1,7 @@
 package novel
 
 import (
+	"Novels_AI/backend/internal/ai/ai_tools"
 	"context"
 	"net/http"
 	"strconv"
@@ -24,6 +25,7 @@ type CharacterUseCase interface {
 	GetCharacter(ctx context.Context, novelID int64, characterID uint) (*novelbiz.Character, error)
 	UpdateCharacter(ctx context.Context, params dto.UpdateCharacterRequest) (*novelbiz.Character, error)
 	DeleteCharacter(ctx context.Context, novelID int64, characterID uint) error
+	GenerateCharacterCard(ctx context.Context, chapterID int64, modelName string) ([]*ai_tools.CharacterCardTool, error)
 }
 
 type characterResponse struct {
@@ -100,8 +102,6 @@ func NewCharacterService(useCase CharacterUseCase) *CharacterService {
 // @Param character body dto.CreateCharacterRequest true "角色信息"
 // @Success 200 {object} common.Response{data=characterResponse}
 // @Failure 400 {object} common.Response "请求参数错误"
-// @Failure 401 {object} common.Response "未登录"
-// @Failure 404 {object} common.Response "小说不存在"
 // @Failure 500 {object} common.SystemError "系统错误"
 // @Router /novels/{id}/characters [post]
 func (service *CharacterService) Create(c *gin.Context) {
@@ -140,8 +140,6 @@ func (service *CharacterService) Create(c *gin.Context) {
 // @Param pageSize query int false "每页数量，默认 10，最大 100"
 // @Success 200 {object} common.Response{data=characterListResponse}
 // @Failure 400 {object} common.Response "请求参数错误"
-// @Failure 401 {object} common.Response "未登录"
-// @Failure 404 {object} common.Response "小说不存在"
 // @Failure 500 {object} common.SystemError "系统错误"
 // @Router /novels/{id}/characters [get]
 func (service *CharacterService) List(c *gin.Context) {
@@ -187,8 +185,6 @@ func (service *CharacterService) List(c *gin.Context) {
 // @Param characterId path int true "角色 ID"
 // @Success 200 {object} common.Response{data=characterResponse}
 // @Failure 400 {object} common.Response "请求参数错误"
-// @Failure 401 {object} common.Response "未登录"
-// @Failure 404 {object} common.Response "角色不存在"
 // @Failure 500 {object} common.SystemError "系统错误"
 // @Router /novels/{id}/characters/{characterId} [get]
 func (service *CharacterService) Get(c *gin.Context) {
@@ -221,8 +217,6 @@ func (service *CharacterService) Get(c *gin.Context) {
 // @Param character body dto.UpdateCharacterRequest true "角色信息"
 // @Success 200 {object} common.Response{data=characterResponse}
 // @Failure 400 {object} common.Response "请求参数错误"
-// @Failure 401 {object} common.Response "未登录"
-// @Failure 404 {object} common.Response "角色不存在"
 // @Failure 500 {object} common.SystemError "系统错误"
 // @Router /novels/{id}/characters/{characterId} [put]
 func (service *CharacterService) Update(c *gin.Context) {
@@ -261,8 +255,6 @@ func (service *CharacterService) Update(c *gin.Context) {
 // @Param characterId path int true "角色 ID"
 // @Success 200 {object} common.Response
 // @Failure 400 {object} common.Response "请求参数错误"
-// @Failure 401 {object} common.Response "未登录"
-// @Failure 404 {object} common.Response "角色不存在"
 // @Failure 500 {object} common.SystemError "系统错误"
 // @Router /novels/{id}/characters/{characterId} [delete]
 func (service *CharacterService) Delete(c *gin.Context) {
@@ -279,6 +271,40 @@ func (service *CharacterService) Delete(c *gin.Context) {
 	c.JSON(http.StatusOK, &common.Response{
 		Code: 0,
 		Msg:  "成功",
+	})
+}
+
+// GenerateCharacterCard 根据章节内容生成角色卡片
+// @Summary 根据章节内容生成角色卡片
+// @Description 使用数据库中当前启用的 AI 提供商和指定模型，分析章节正文并生成角色卡片列表
+// @Tags character
+// @Produce json
+// @Param id path int true "章节 ID"
+// @Param modelName query string true "大模型名称"
+// @Success 200 {object} common.Response{data=[]ai_tools.CharacterCardTool}
+// @Failure 500 {object} common.SystemError "系统错误"
+// @Router /novels/chapters/{id}/characters/generate-card [get]
+func (service *CharacterService) GenerateCharacterCard(c *gin.Context) {
+	chapterID, ok := parseCharacterNovelID(c)
+	if !ok {
+		return
+	}
+	// 获取大模型名称
+	modelName := c.Query("modelName")
+	if modelName == "" {
+		_ = c.Error(common.NewSystemError(2000, "大模型名称不能为空"))
+		return
+	}
+
+	characterCards, err := service.useCase.GenerateCharacterCard(c.Request.Context(), chapterID, modelName)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	c.JSON(http.StatusOK, &common.Response{
+		Code: 0,
+		Msg:  "成功",
+		Data: characterCards,
 	})
 }
 

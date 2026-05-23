@@ -1,5 +1,20 @@
 basePath: /api/v1
 definitions:
+  ai_tools.CharacterCardTool:
+    properties:
+      ability:
+        type: string
+      appearance:
+        type: string
+      gender:
+        type: string
+      intro:
+        type: string
+      name:
+        type: string
+      personality:
+        type: string
+    type: object
   aiprovider.aiProviderListResponse:
     properties:
       items:
@@ -624,14 +639,6 @@ paths:
                 data:
                   $ref: '#/definitions/aiprovider.aiProviderListResponse'
               type: object
-        "400":
-          description: 请求参数错误
-          schema:
-            $ref: '#/definitions/common.Response'
-        "401":
-          description: 未登录
-          schema:
-            $ref: '#/definitions/common.Response'
         "500":
           description: 系统错误
           schema:
@@ -662,14 +669,6 @@ paths:
                 data:
                   $ref: '#/definitions/aiprovider.aiProviderResponse'
               type: object
-        "400":
-          description: 请求参数错误
-          schema:
-            $ref: '#/definitions/common.Response'
-        "401":
-          description: 未登录
-          schema:
-            $ref: '#/definitions/common.Response'
         "500":
           description: 系统错误
           schema:
@@ -691,18 +690,6 @@ paths:
       responses:
         "200":
           description: OK
-          schema:
-            $ref: '#/definitions/common.Response'
-        "400":
-          description: 请求参数错误
-          schema:
-            $ref: '#/definitions/common.Response'
-        "401":
-          description: 未登录
-          schema:
-            $ref: '#/definitions/common.Response'
-        "404":
-          description: ai 提供商不存在
           schema:
             $ref: '#/definitions/common.Response'
         "500":
@@ -732,18 +719,6 @@ paths:
                 data:
                   $ref: '#/definitions/aiprovider.aiProviderResponse'
               type: object
-        "400":
-          description: 请求参数错误
-          schema:
-            $ref: '#/definitions/common.Response'
-        "401":
-          description: 未登录
-          schema:
-            $ref: '#/definitions/common.Response'
-        "404":
-          description: ai 提供商不存在
-          schema:
-            $ref: '#/definitions/common.Response'
         "500":
           description: 系统错误
           schema:
@@ -779,18 +754,6 @@ paths:
                 data:
                   $ref: '#/definitions/aiprovider.aiProviderResponse'
               type: object
-        "400":
-          description: 请求参数错误
-          schema:
-            $ref: '#/definitions/common.Response'
-        "401":
-          description: 未登录
-          schema:
-            $ref: '#/definitions/common.Response'
-        "404":
-          description: ai 提供商不存在
-          schema:
-            $ref: '#/definitions/common.Response'
         "500":
           description: 系统错误
           schema:
@@ -817,23 +780,33 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/common.Response'
-        "400":
-          description: 请求参数错误
-          schema:
-            $ref: '#/definitions/common.Response'
-        "401":
-          description: 未登录
-          schema:
-            $ref: '#/definitions/common.Response'
-        "404":
-          description: ai 提供商不存在
-          schema:
-            $ref: '#/definitions/common.Response'
         "500":
           description: 系统错误
           schema:
             $ref: '#/definitions/common.SystemError'
       summary: 一键启用 ai 提供商
+      tags:
+      - ai-provider
+  /ai-providers/models:
+    get:
+      description: 查询数据库中当前已启用 ai 提供商保存的模型列表，不请求上游 OpenAI 兼容 /v1/models 接口
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/aiprovider.aiProviderModelsResponse'
+              type: object
+        "500":
+          description: 系统错误
+          schema:
+            $ref: '#/definitions/common.SystemError'
+      summary: 查询已启用 ai 提供商保存的模型列表
       tags:
       - ai-provider
   /ai-providers/models/query:
@@ -860,22 +833,10 @@ paths:
                 data:
                   $ref: '#/definitions/aiprovider.aiProviderModelsResponse'
               type: object
-        "400":
-          description: 请求参数错误
-          schema:
-            $ref: '#/definitions/common.Response'
-        "401":
-          description: 未登录
-          schema:
-            $ref: '#/definitions/common.Response'
         "500":
           description: 系统错误
           schema:
             $ref: '#/definitions/common.SystemError'
-        "502":
-          description: ai 提供商模型查询失败
-          schema:
-            $ref: '#/definitions/common.Response'
       summary: 查询 ai 提供商模型列表
       tags:
       - ai-provider
@@ -1422,14 +1383,6 @@ paths:
           description: 请求参数错误
           schema:
             $ref: '#/definitions/common.Response'
-        "401":
-          description: 未登录
-          schema:
-            $ref: '#/definitions/common.Response'
-        "404":
-          description: 小说不存在
-          schema:
-            $ref: '#/definitions/common.Response'
         "500":
           description: 系统错误
           schema:
@@ -1469,14 +1422,6 @@ paths:
           description: 请求参数错误
           schema:
             $ref: '#/definitions/common.Response'
-        "401":
-          description: 未登录
-          schema:
-            $ref: '#/definitions/common.Response'
-        "404":
-          description: 小说不存在
-          schema:
-            $ref: '#/definitions/common.Response'
         "500":
           description: 系统错误
           schema:
@@ -1507,14 +1452,6 @@ paths:
             $ref: '#/definitions/common.Response'
         "400":
           description: 请求参数错误
-          schema:
-            $ref: '#/definitions/common.Response'
-        "401":
-          description: 未登录
-          schema:
-            $ref: '#/definitions/common.Response'
-        "404":
-          description: 角色不存在
           schema:
             $ref: '#/definitions/common.Response'
         "500":
@@ -1551,14 +1488,6 @@ paths:
               type: object
         "400":
           description: 请求参数错误
-          schema:
-            $ref: '#/definitions/common.Response'
-        "401":
-          description: 未登录
-          schema:
-            $ref: '#/definitions/common.Response'
-        "404":
-          description: 角色不存在
           schema:
             $ref: '#/definitions/common.Response'
         "500":
@@ -1605,19 +1534,46 @@ paths:
           description: 请求参数错误
           schema:
             $ref: '#/definitions/common.Response'
-        "401":
-          description: 未登录
-          schema:
-            $ref: '#/definitions/common.Response'
-        "404":
-          description: 角色不存在
-          schema:
-            $ref: '#/definitions/common.Response'
         "500":
           description: 系统错误
           schema:
             $ref: '#/definitions/common.SystemError'
       summary: 修改角色
+      tags:
+      - character
+  /novels/chapters/{id}/characters/generate-card:
+    get:
+      description: 使用数据库中当前启用的 AI 提供商和指定模型，分析章节正文并生成角色卡片列表
+      parameters:
+      - description: 章节 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 大模型名称
+        in: query
+        name: modelName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/ai_tools.CharacterCardTool'
+                  type: array
+              type: object
+        "500":
+          description: 系统错误
+          schema:
+            $ref: '#/definitions/common.SystemError'
+      summary: 根据章节内容生成角色卡片
       tags:
       - character
   /novels/update:

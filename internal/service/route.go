@@ -63,15 +63,16 @@ func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, upl
 	chapterData := data.NewChapterData(db)
 	chapterUseCase := novelbiz.NewChapterUseCase(novelData, chapterData)
 	chapterService := novelservice.NewChapterService(chapterUseCase)
-	// 角色相关接口
-	characterData := data.NewCharacterData(db)
-	characterUseCase := novelbiz.NewCharacterUseCase(novelData, characterData)
-	characterService := novelservice.NewCharacterService(characterUseCase)
 
 	// ai 提供商相关接口
 	aiProviderData := data.NewAIProviderData(db)
 	aiProviderUseCase := aiproviderbiz.NewAIProviderUseCase(aiProviderData, apiKeyCipher)
 	aiProviderService := aiproviderservice.NewAIProviderService(aiProviderUseCase)
+
+	// 角色相关接口
+	characterData := data.NewCharacterData(db)
+	characterUseCase := novelbiz.NewCharacterUseCase(novelData, characterData, aiProviderData, chapterData, apiKeyCipher)
+	characterService := novelservice.NewCharacterService(characterUseCase)
 
 	// 上传相关接口
 	s3UploadData := data.NewS3UploadData(uploadConfig)
@@ -98,6 +99,8 @@ func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, upl
 	novelGroup.GET("/:id/chapters/:chapterId", chapterService.Get)
 	novelGroup.PUT("/:id/chapters/:chapterId", chapterService.Update)
 	novelGroup.DELETE("/:id/chapters/:chapterId", chapterService.Delete)
+	// 按章节内容生成角色卡片，路径中的 id 表示章节 ID。
+	novelGroup.GET("/chapters/:id/characters/generate-card", characterService.GenerateCharacterCard)
 	novelGroup.POST("/:id/characters", characterService.Create)
 	novelGroup.GET("/:id/characters", characterService.List)
 	novelGroup.GET("/:id/characters/:characterId", characterService.Get)
