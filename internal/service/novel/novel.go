@@ -76,7 +76,7 @@ func (service *NovelService) Create(c *gin.Context) {
 	var request dto.CreateNovelRequest
 	err := c.ShouldBindJSON(&request)
 	if err != nil {
-		_ = c.Error(common.InvalidRequest)
+		_ = c.Error(common.InvalidRequestWithValidationMessage(request, err))
 		return
 	}
 
@@ -183,7 +183,7 @@ func (service *NovelService) Get(c *gin.Context) {
 func (service *NovelService) Update(c *gin.Context) {
 	var request dto.UpdateNovelRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
-		_ = c.Error(common.InvalidRequest)
+		_ = c.Error(common.InvalidRequestWithValidationMessage(request, err))
 		return
 	}
 

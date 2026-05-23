@@ -18,7 +18,7 @@ const (
 	apiKeyCryptoKeySize    = 32
 )
 
-// APIKeyCrypto 负责 AI 提供商 API Key 的可逆加密。
+// APIKeyCrypto 负责 ai 提供商 API Key 的可逆加密。
 //
 // 数据库只保存 Encrypt 生成的密文；需要展示详情时，再通过 Decrypt 还原明文。
 type APIKeyCrypto struct {

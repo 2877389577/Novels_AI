@@ -17,7 +17,7 @@ type Config struct {
 	Log LogConfig `mapstructure:"log" yaml:"log"`
 	// Upload 保存文件上传相关配置。
 	Upload UploadConfig `mapstructure:"upload" yaml:"upload"`
-	// AIProvider 保存 AI 提供商管理相关配置。
+	// AIProvider 保存 ai 提供商管理相关配置。
 	AIProvider AIProviderConfig `mapstructure:"ai_provider" yaml:"ai_provider"`
 }
 
@@ -64,7 +64,7 @@ type S3UploadConfig struct {
 	Prefix string `mapstructure:"prefix" yaml:"prefix"`
 }
 
-// AIProviderConfig 定义 AI 提供商管理模块配置。
+// AIProviderConfig 定义 ai 提供商管理模块配置。
 type AIProviderConfig struct {
 	// Crypto 保存 API Key 可逆加密所需的密钥材料。
 	Crypto AIProviderCryptoConfig `mapstructure:"crypto" yaml:"crypto"`

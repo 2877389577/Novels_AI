@@ -12,7 +12,7 @@ rate_limit:
 session:
   salt: novels-ai-session-salt
 
-# ai_provider 控制 AI 提供商管理模块。
+# ai_provider 控制 ai 提供商管理模块。
 ai_provider:
   crypto:
     # secret 和 salt 用于派生 API Key 加密密钥，生产环境请替换为随机长字符串。

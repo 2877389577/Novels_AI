@@ -27,16 +27,16 @@ definitions:
         description: API Key 明文，仅详情类响应返回
         type: string
       baseUrl:
-        description: AI 提供商基础 URL
+        description: ai 提供商基础 URL
         type: string
       configJson:
-        description: AI 提供商额外配置
+        description: ai 提供商额外配置
         type: object
       createdAt:
         description: 创建时间
         type: string
       id:
-        description: AI 提供商 ID
+        description: ai 提供商 ID
         type: integer
       isEnabled:
         description: 是否启用
@@ -56,10 +56,10 @@ definitions:
           type: string
         type: array
       name:
-        description: AI 提供商名称
+        description: ai 提供商名称
         type: string
       providerType:
-        description: AI 提供商类型
+        description: ai 提供商类型
         type: string
       updatedAt:
         description: 更新时间
@@ -91,10 +91,10 @@ definitions:
         description: API Key 明文，必填，业务层会在入库前加密。
         type: string
       baseUrl:
-        description: AI 提供商基础 URL，必填。
+        description: ai 提供商基础 URL，必填。
         type: string
       configJson:
-        description: AI 提供商额外配置。
+        description: ai 提供商额外配置。
         type: object
       isEnabled:
         description: 是否启用；不传时由业务层默认启用。
@@ -114,10 +114,10 @@ definitions:
           type: string
         type: array
       name:
-        description: AI 提供商名称，必填。
+        description: ai 提供商名称，必填。
         type: string
       providerType:
-        description: AI 提供商类型，必填。
+        description: ai 提供商类型，必填。
         type: string
     required:
     - apiKey
@@ -211,6 +211,14 @@ definitions:
     required:
     - title
     type: object
+  dto.EnableAIProviderRequest:
+    properties:
+      id:
+        description: ID 是需要被设置为启用状态的 ai 提供商主键。
+        type: integer
+    required:
+    - id
+    type: object
   dto.PasswordRequest:
     properties:
       password:
@@ -225,7 +233,7 @@ definitions:
         description: API Key 明文，仅用于本次上游查询，不入库也不返回。
         type: string
       baseUrl:
-        description: AI 提供商基础 URL，后端会按 OpenAI 兼容协议拼接到 /v1/models。
+        description: ai 提供商基础 URL，后端会按 OpenAI 兼容协议拼接到 /v1/models。
         type: string
     required:
     - apiKey
@@ -237,10 +245,10 @@ definitions:
         description: API Key 明文，必填，业务层会在入库前重新加密。
         type: string
       baseUrl:
-        description: AI 提供商基础 URL，必填。
+        description: ai 提供商基础 URL，必填。
         type: string
       configJson:
-        description: AI 提供商额外配置。
+        description: ai 提供商额外配置。
         type: object
       isEnabled:
         description: 是否启用。
@@ -260,10 +268,10 @@ definitions:
           type: string
         type: array
       name:
-        description: AI 提供商名称，必填。
+        description: ai 提供商名称，必填。
         type: string
       providerType:
-        description: AI 提供商类型，必填。
+        description: ai 提供商类型，必填。
         type: string
     required:
     - apiKey
@@ -594,7 +602,7 @@ info:
 paths:
   /ai-providers:
     get:
-      description: 分页查询 AI 提供商列表，列表不返回 API Key
+      description: 分页查询 ai 提供商列表，列表不返回 API Key
       parameters:
       - description: 页码，默认 1
         in: query
@@ -628,15 +636,15 @@ paths:
           description: 系统错误
           schema:
             $ref: '#/definitions/common.SystemError'
-      summary: 查询 AI 提供商列表
+      summary: 查询 ai 提供商列表
       tags:
       - ai-provider
     post:
       consumes:
       - application/json
-      description: 创建 AI 提供商，API Key 入库前会加密
+      description: 创建 ai 提供商，API Key 入库前会加密
       parameters:
-      - description: AI 提供商信息
+      - description: ai 提供商信息
         in: body
         name: provider
         required: true
@@ -666,14 +674,14 @@ paths:
           description: 系统错误
           schema:
             $ref: '#/definitions/common.SystemError'
-      summary: 新增 AI 提供商
+      summary: 新增 ai 提供商
       tags:
       - ai-provider
   /ai-providers/{id}:
     delete:
-      description: 按 ID 物理删除 AI 提供商
+      description: 按 ID 物理删除 ai 提供商
       parameters:
-      - description: AI 提供商 ID
+      - description: ai 提供商 ID
         in: path
         name: id
         required: true
@@ -694,20 +702,20 @@ paths:
           schema:
             $ref: '#/definitions/common.Response'
         "404":
-          description: AI 提供商不存在
+          description: ai 提供商不存在
           schema:
             $ref: '#/definitions/common.Response'
         "500":
           description: 系统错误
           schema:
             $ref: '#/definitions/common.SystemError'
-      summary: 删除 AI 提供商
+      summary: 删除 ai 提供商
       tags:
       - ai-provider
     get:
-      description: 按 ID 查询 AI 提供商详情，返回解密后的 API Key
+      description: 按 ID 查询 ai 提供商详情，返回解密后的 API Key
       parameters:
-      - description: AI 提供商 ID
+      - description: ai 提供商 ID
         in: path
         name: id
         required: true
@@ -733,27 +741,27 @@ paths:
           schema:
             $ref: '#/definitions/common.Response'
         "404":
-          description: AI 提供商不存在
+          description: ai 提供商不存在
           schema:
             $ref: '#/definitions/common.Response'
         "500":
           description: 系统错误
           schema:
             $ref: '#/definitions/common.SystemError'
-      summary: 查询 AI 提供商详情
+      summary: 查询 ai 提供商详情
       tags:
       - ai-provider
     put:
       consumes:
       - application/json
-      description: 按 ID 全量更新 AI 提供商，API Key 会重新加密
+      description: 按 ID 全量更新 ai 提供商，API Key 会重新加密
       parameters:
-      - description: AI 提供商 ID
+      - description: ai 提供商 ID
         in: path
         name: id
         required: true
         type: integer
-      - description: AI 提供商信息
+      - description: ai 提供商信息
         in: body
         name: provider
         required: true
@@ -780,14 +788,52 @@ paths:
           schema:
             $ref: '#/definitions/common.Response'
         "404":
-          description: AI 提供商不存在
+          description: ai 提供商不存在
           schema:
             $ref: '#/definitions/common.Response'
         "500":
           description: 系统错误
           schema:
             $ref: '#/definitions/common.SystemError'
-      summary: 更新 AI 提供商
+      summary: 更新 ai 提供商
+      tags:
+      - ai-provider
+  /ai-providers/enable:
+    post:
+      consumes:
+      - application/json
+      description: 将当前已启用的 ai 提供商全部设为未启用，再启用请求中指定的 ai 提供商
+      parameters:
+      - description: 需要启用的 ai 提供商 ID
+        in: body
+        name: provider
+        required: true
+        schema:
+          $ref: '#/definitions/dto.EnableAIProviderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/common.Response'
+        "401":
+          description: 未登录
+          schema:
+            $ref: '#/definitions/common.Response'
+        "404":
+          description: ai 提供商不存在
+          schema:
+            $ref: '#/definitions/common.Response'
+        "500":
+          description: 系统错误
+          schema:
+            $ref: '#/definitions/common.SystemError'
+      summary: 一键启用 ai 提供商
       tags:
       - ai-provider
   /ai-providers/models/query:
@@ -796,7 +842,7 @@ paths:
       - application/json
       description: 使用前端传入的 baseUrl 和 apiKey，按 OpenAI 兼容 /v1/models 协议查询模型 ID 列表；不会写入数据库
       parameters:
-      - description: AI 提供商连接信息
+      - description: ai 提供商连接信息
         in: body
         name: provider
         required: true
@@ -827,10 +873,10 @@ paths:
           schema:
             $ref: '#/definitions/common.SystemError'
         "502":
-          description: AI 提供商模型查询失败
+          description: ai 提供商模型查询失败
           schema:
             $ref: '#/definitions/common.Response'
-      summary: 查询 AI 提供商模型列表
+      summary: 查询 ai 提供商模型列表
       tags:
       - ai-provider
   /login:

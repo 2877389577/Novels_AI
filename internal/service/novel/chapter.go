@@ -101,7 +101,7 @@ func (service *ChapterService) Create(c *gin.Context) {
 
 	var request dto.CreateChapterRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
-		_ = c.Error(common.InvalidRequest)
+		_ = c.Error(common.InvalidRequestWithValidationMessage(request, err))
 		return
 	}
 	request.NovelID = novelID
@@ -291,7 +291,7 @@ func (service *ChapterService) Update(c *gin.Context) {
 	var request dto.UpdateChapterRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		slog.ErrorContext(c.Request.Context(), "更新章节请求参数错误", "err", err)
-		_ = c.Error(common.InvalidRequest)
+		_ = c.Error(common.InvalidRequestWithValidationMessage(request, err))
 		return
 	}
 	request.NovelID = novelID

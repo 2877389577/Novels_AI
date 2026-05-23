@@ -20,30 +20,32 @@ type AIProviderService struct {
 	useCase AIProviderUseCase
 }
 
-// AIProviderUseCase 描述 service 层依赖的 AI 提供商业务能力。
+// AIProviderUseCase 描述 service 层依赖的 ai 提供商业务能力。
 type AIProviderUseCase interface {
 	Create(ctx context.Context, params dto.CreateAIProviderRequest) (*aiproviderbiz.AIProviderDetail, error)
 	List(ctx context.Context, page, pageSize int) (*aiproviderbiz.ListAIProviderResult, error)
 	Get(ctx context.Context, id int64) (*aiproviderbiz.AIProviderDetail, error)
 	Update(ctx context.Context, params dto.UpdateAIProviderRequest) (*aiproviderbiz.AIProviderDetail, error)
 	Delete(ctx context.Context, id int64) error
+	Enable(ctx context.Context, id int64) error
+	ListEnabledModels(ctx context.Context) ([]string, error)
 	QueryModels(ctx context.Context, params dto.QueryAIProviderModelsRequest) ([]string, error)
 }
 
 type aiProviderResponse struct {
-	// AI 提供商 ID
+	// ai 提供商 ID
 	ID int64 `json:"id"`
-	// AI 提供商名称
+	// ai 提供商名称
 	Name string `json:"name"`
-	// AI 提供商类型
+	// ai 提供商类型
 	ProviderType string `json:"providerType"`
-	// AI 提供商基础 URL
+	// ai 提供商基础 URL
 	BaseURL string `json:"baseUrl"`
 	// API Key 明文，仅详情类响应返回
 	APIKey string `json:"apiKey,omitempty"`
 	// 是否启用
 	IsEnabled bool `json:"isEnabled"`
-	// AI 提供商额外配置
+	// ai 提供商额外配置
 	ConfigJSON json.RawMessage `json:"configJson" swaggertype:"object"`
 	// 支持的模型列表
 	Models []string `json:"models"`
@@ -75,22 +77,20 @@ func NewAIProviderService(useCase AIProviderUseCase) *AIProviderService {
 	return &AIProviderService{useCase: useCase}
 }
 
-// Create 新增 AI 提供商
-// @Summary 新增 AI 提供商
-// @Description 创建 AI 提供商，API Key 入库前会加密
+// Create 新增 ai 提供商
+// @Summary 新增 ai 提供商
+// @Description 创建 ai 提供商，API Key 入库前会加密
 // @Tags ai-provider
 // @Accept json
 // @Produce json
-// @Param provider body dto.CreateAIProviderRequest true "AI 提供商信息"
+// @Param provider body dto.CreateAIProviderRequest true "ai 提供商信息"
 // @Success 200 {object} common.Response{data=aiProviderResponse}
-// @Failure 400 {object} common.Response "请求参数错误"
-// @Failure 401 {object} common.Response "未登录"
 // @Failure 500 {object} common.SystemError "系统错误"
 // @Router /ai-providers [post]
 func (service *AIProviderService) Create(c *gin.Context) {
 	var request dto.CreateAIProviderRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
-		_ = c.Error(common.InvalidRequest)
+		_ = c.Error(common.InvalidRequestWithValidationMessage(request, err))
 		return
 	}
 
@@ -107,16 +107,14 @@ func (service *AIProviderService) Create(c *gin.Context) {
 	})
 }
 
-// List 查询 AI 提供商列表
-// @Summary 查询 AI 提供商列表
-// @Description 分页查询 AI 提供商列表，列表不返回 API Key
+// List 查询 ai 提供商列表
+// @Summary 查询 ai 提供商列表
+// @Description 分页查询 ai 提供商列表，列表不返回 API Key
 // @Tags ai-provider
 // @Produce json
 // @Param page query int false "页码，默认 1"
 // @Param pageSize query int false "每页数量，默认 10，最大 100"
 // @Success 200 {object} common.Response{data=aiProviderListResponse}
-// @Failure 400 {object} common.Response "请求参数错误"
-// @Failure 401 {object} common.Response "未登录"
 // @Failure 500 {object} common.SystemError "系统错误"
 // @Router /ai-providers [get]
 func (service *AIProviderService) List(c *gin.Context) {
@@ -148,23 +146,20 @@ func (service *AIProviderService) List(c *gin.Context) {
 	})
 }
 
-// QueryModels 查询 AI 提供商模型列表
-// @Summary 查询 AI 提供商模型列表
+// QueryModels 查询 ai 提供商模型列表
+// @Summary 查询 ai 提供商模型列表
 // @Description 使用前端传入的 baseUrl 和 apiKey，按 OpenAI 兼容 /v1/models 协议查询模型 ID 列表；不会写入数据库
 // @Tags ai-provider
 // @Accept json
 // @Produce json
-// @Param provider body dto.QueryAIProviderModelsRequest true "AI 提供商连接信息"
+// @Param provider body dto.QueryAIProviderModelsRequest true "ai 提供商连接信息"
 // @Success 200 {object} common.Response{data=aiProviderModelsResponse}
-// @Failure 400 {object} common.Response "请求参数错误"
-// @Failure 401 {object} common.Response "未登录"
-// @Failure 502 {object} common.Response "AI 提供商模型查询失败"
 // @Failure 500 {object} common.SystemError "系统错误"
 // @Router /ai-providers/models/query [post]
 func (service *AIProviderService) QueryModels(c *gin.Context) {
 	var request dto.QueryAIProviderModelsRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
-		_ = c.Error(common.InvalidRequest)
+		_ = c.Error(common.InvalidRequestWithValidationMessage(request, err))
 		return
 	}
 
@@ -181,16 +176,63 @@ func (service *AIProviderService) QueryModels(c *gin.Context) {
 	})
 }
 
-// Get 查询 AI 提供商详情
-// @Summary 查询 AI 提供商详情
-// @Description 按 ID 查询 AI 提供商详情，返回解密后的 API Key
+// ListEnabledModels 查询已启用 ai 提供商保存的模型列表
+// @Summary 查询已启用 ai 提供商保存的模型列表
+// @Description 查询数据库中当前已启用 ai 提供商保存的模型列表，不请求上游 OpenAI 兼容 /v1/models 接口
 // @Tags ai-provider
 // @Produce json
-// @Param id path int true "AI 提供商 ID"
+// @Success 200 {object} common.Response{data=aiProviderModelsResponse}
+// @Failure 500 {object} common.SystemError "系统错误"
+// @Router /ai-providers/models [get]
+func (service *AIProviderService) ListEnabledModels(c *gin.Context) {
+	models, err := service.useCase.ListEnabledModels(c.Request.Context())
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, &common.Response{
+		Code: 0,
+		Msg:  "成功",
+		Data: aiProviderModelsResponse{Models: models},
+	})
+}
+
+// Enable 一键启用 ai 提供商
+// @Summary 一键启用 ai 提供商
+// @Description 将当前已启用的 ai 提供商全部设为未启用，再启用请求中指定的 ai 提供商
+// @Tags ai-provider
+// @Accept json
+// @Produce json
+// @Param provider body dto.EnableAIProviderRequest true "需要启用的 ai 提供商 ID"
+// @Success 200 {object} common.Response
+// @Failure 500 {object} common.SystemError "系统错误"
+// @Router /ai-providers/enable [post]
+func (service *AIProviderService) Enable(c *gin.Context) {
+	var request dto.EnableAIProviderRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		_ = c.Error(common.InvalidRequestWithValidationMessage(request, err))
+		return
+	}
+
+	if err := service.useCase.Enable(c.Request.Context(), request.ID); err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, &common.Response{
+		Code: 0,
+		Msg:  "成功",
+	})
+}
+
+// Get 查询 ai 提供商详情
+// @Summary 查询 ai 提供商详情
+// @Description 按 ID 查询 ai 提供商详情，返回解密后的 API Key
+// @Tags ai-provider
+// @Produce json
+// @Param id path int true "ai 提供商 ID"
 // @Success 200 {object} common.Response{data=aiProviderResponse}
-// @Failure 400 {object} common.Response "请求参数错误"
-// @Failure 401 {object} common.Response "未登录"
-// @Failure 404 {object} common.Response "AI 提供商不存在"
 // @Failure 500 {object} common.SystemError "系统错误"
 // @Router /ai-providers/{id} [get]
 func (service *AIProviderService) Get(c *gin.Context) {
@@ -212,18 +254,15 @@ func (service *AIProviderService) Get(c *gin.Context) {
 	})
 }
 
-// Update 更新 AI 提供商
-// @Summary 更新 AI 提供商
-// @Description 按 ID 全量更新 AI 提供商，API Key 会重新加密
+// Update 更新 ai 提供商
+// @Summary 更新 ai 提供商
+// @Description 按 ID 全量更新 ai 提供商，API Key 会重新加密
 // @Tags ai-provider
 // @Accept json
 // @Produce json
-// @Param id path int true "AI 提供商 ID"
-// @Param provider body dto.UpdateAIProviderRequest true "AI 提供商信息"
+// @Param id path int true "ai 提供商 ID"
+// @Param provider body dto.UpdateAIProviderRequest true "ai 提供商信息"
 // @Success 200 {object} common.Response{data=aiProviderResponse}
-// @Failure 400 {object} common.Response "请求参数错误"
-// @Failure 401 {object} common.Response "未登录"
-// @Failure 404 {object} common.Response "AI 提供商不存在"
 // @Failure 500 {object} common.SystemError "系统错误"
 // @Router /ai-providers/{id} [put]
 func (service *AIProviderService) Update(c *gin.Context) {
@@ -234,8 +273,8 @@ func (service *AIProviderService) Update(c *gin.Context) {
 
 	var request dto.UpdateAIProviderRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
-		slog.ErrorContext(c.Request.Context(), "更新 AI 提供商请求参数错误", "err", err)
-		_ = c.Error(common.InvalidRequest)
+		slog.ErrorContext(c.Request.Context(), "更新 ai 提供商请求参数错误", "err", err)
+		_ = c.Error(common.InvalidRequestWithValidationMessage(request, err))
 		return
 	}
 	request.ID = id
@@ -253,16 +292,13 @@ func (service *AIProviderService) Update(c *gin.Context) {
 	})
 }
 
-// Delete 删除 AI 提供商
-// @Summary 删除 AI 提供商
-// @Description 按 ID 物理删除 AI 提供商
+// Delete 删除 ai 提供商
+// @Summary 删除 ai 提供商
+// @Description 按 ID 物理删除 ai 提供商
 // @Tags ai-provider
 // @Produce json
-// @Param id path int true "AI 提供商 ID"
+// @Param id path int true "ai 提供商 ID"
 // @Success 200 {object} common.Response
-// @Failure 400 {object} common.Response "请求参数错误"
-// @Failure 401 {object} common.Response "未登录"
-// @Failure 404 {object} common.Response "AI 提供商不存在"
 // @Failure 500 {object} common.SystemError "系统错误"
 // @Router /ai-providers/{id} [delete]
 func (service *AIProviderService) Delete(c *gin.Context) {

@@ -37,7 +37,7 @@ type ModelHTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-// AIProviderRepo 描述 AI 提供商业务依赖的数据访问能力。
+// AIProviderRepo 描述 ai 提供商业务依赖的数据访问能力。
 type AIProviderRepo interface {
 	Create(ctx context.Context, provider *data.AIProvider) (*data.AIProvider, error)
 	List(ctx context.Context, offset, limit int) ([]*data.AIProvider, int64, error)
@@ -45,6 +45,7 @@ type AIProviderRepo interface {
 	FindEnabled(ctx context.Context) (*data.AIProvider, error)
 	Update(ctx context.Context, provider *data.AIProvider) (*data.AIProvider, error)
 	Delete(ctx context.Context, id int64) error
+	Enable(ctx context.Context, id int64) error
 }
 
 // AIProviderDetail 是带明文 API Key 的详情模型，只用于受保护的管理接口响应。
@@ -74,19 +75,19 @@ func NewAIProviderUseCase(repo AIProviderRepo, cipher APIKeyCipher) *AIProviderU
 	}
 }
 
-// Create 整理默认值、加密 API Key 后创建 AI 提供商。
+// Create 整理默认值、加密 API Key 后创建 ai 提供商。
 func (uc *AIProviderUseCase) Create(ctx context.Context, params dto.CreateAIProviderRequest) (*AIProviderDetail, error) {
 	isEnabled := params.IsEnabled
 	if isEnabled {
 		if err := uc.ensureEnabledProviderUnique(ctx, 0); err != nil {
-			slog.ErrorContext(ctx, "确保 AI 提供商启用唯一性失败", "err", err)
+			slog.ErrorContext(ctx, "确保 ai 提供商启用唯一性失败", "err", err)
 			return nil, err
 		}
 	}
 
 	encrypted, err := uc.cipher.Encrypt(params.APIKey)
 	if err != nil {
-		slog.ErrorContext(ctx, "加密 AI 提供商 API Key 失败", "err", err)
+		slog.ErrorContext(ctx, "加密 ai 提供商 API Key 失败", "err", err)
 		return nil, err
 	}
 
@@ -103,14 +104,14 @@ func (uc *AIProviderUseCase) Create(ctx context.Context, params dto.CreateAIProv
 		MaxOutputTokens:  params.MaxOutputTokens,
 	})
 	if err != nil {
-		slog.ErrorContext(ctx, "新增 AI 提供商失败", "err", err)
+		slog.ErrorContext(ctx, "新增 ai 提供商失败", "err", err)
 		return nil, err
 	}
 
 	return uc.toDetail(ctx, provider)
 }
 
-// List 按分页参数查询 AI 提供商列表，列表不解密 API Key。
+// List 按分页参数查询 ai 提供商列表，列表不解密 API Key。
 func (uc *AIProviderUseCase) List(ctx context.Context, page, pageSize int) (*ListAIProviderResult, error) {
 	offset := (page - 1) * pageSize
 
@@ -119,14 +120,14 @@ func (uc *AIProviderUseCase) List(ctx context.Context, page, pageSize int) (*Lis
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return &ListAIProviderResult{Page: page, PageSize: pageSize}, nil
 		}
-		slog.ErrorContext(ctx, "查询 AI 提供商列表失败", "err", err)
+		slog.ErrorContext(ctx, "查询 ai 提供商列表失败", "err", err)
 		return nil, err
 	}
 
 	for _, v := range items {
 		decrypt, err := uc.cipher.Decrypt(v.APIKeyEncrypted)
 		if err != nil {
-			slog.ErrorContext(ctx, "解密 AI 提供商 API Key 失败", "err", err)
+			slog.ErrorContext(ctx, "解密 ai 提供商 API Key 失败", "err", err)
 		}
 		v.APIKeyEncrypted = decrypt
 	}
@@ -139,7 +140,7 @@ func (uc *AIProviderUseCase) List(ctx context.Context, page, pageSize int) (*Lis
 	}, nil
 }
 
-// Get 查询 AI 提供商详情，并把入库密文解密为明文 API Key。
+// Get 查询 ai 提供商详情，并把入库密文解密为明文 API Key。
 func (uc *AIProviderUseCase) Get(ctx context.Context, id int64) (*AIProviderDetail, error) {
 	provider, err := uc.repo.FindByID(ctx, id)
 	if err != nil {
@@ -149,7 +150,7 @@ func (uc *AIProviderUseCase) Get(ctx context.Context, id int64) (*AIProviderDeta
 	return uc.toDetail(ctx, provider)
 }
 
-// Update 按请求参数全量保存 AI 提供商，API Key 会在入库前重新加密。
+// Update 按请求参数全量保存 ai 提供商，API Key 会在入库前重新加密。
 func (uc *AIProviderUseCase) Update(ctx context.Context, params dto.UpdateAIProviderRequest) (*AIProviderDetail, error) {
 	if params.IsEnabled {
 		if err := uc.ensureEnabledProviderUnique(ctx, params.ID); err != nil {
@@ -159,7 +160,7 @@ func (uc *AIProviderUseCase) Update(ctx context.Context, params dto.UpdateAIProv
 
 	encrypted, err := uc.cipher.Encrypt(params.APIKey)
 	if err != nil {
-		slog.ErrorContext(ctx, "加密 AI 提供商 API Key 失败", "err", err)
+		slog.ErrorContext(ctx, "加密 ai 提供商 API Key 失败", "err", err)
 		return nil, err
 	}
 
@@ -177,23 +178,49 @@ func (uc *AIProviderUseCase) Update(ctx context.Context, params dto.UpdateAIProv
 		MaxOutputTokens:  params.MaxOutputTokens,
 	})
 	if err != nil {
-		slog.ErrorContext(ctx, "更新 AI 提供商失败", "err", err)
+		slog.ErrorContext(ctx, "更新 ai 提供商失败", "err", err)
 		return nil, err
 	}
 
 	return uc.toDetail(ctx, provider)
 }
 
-// Delete 物理删除 AI 提供商。
+// Delete 物理删除 ai 提供商。
 func (uc *AIProviderUseCase) Delete(ctx context.Context, id int64) error {
 	return uc.repo.Delete(ctx, id)
 }
 
-// ensureEnabledProviderUnique 保证全局只有一个启用中的 AI 提供商；currentID 为当前更新记录，新增时传 0。
+// Enable 一键启用指定 ai 提供商，具体切换过程由数据层在事务里完成。
+func (uc *AIProviderUseCase) Enable(ctx context.Context, id int64) error {
+	if err := uc.repo.Enable(ctx, id); err != nil {
+		slog.ErrorContext(ctx, "一键启用 ai 提供商失败", "id", id, "err", err)
+		return err
+	}
+
+	return nil
+}
+
+// ListEnabledModels 返回当前启用 ai 提供商保存在数据库中的模型列表，不请求上游接口。
+func (uc *AIProviderUseCase) ListEnabledModels(ctx context.Context) ([]string, error) {
+	provider, err := uc.repo.FindEnabled(ctx)
+	if err != nil {
+		slog.ErrorContext(ctx, "查询启用中的 ai 提供商模型列表失败", "err", err)
+		return nil, err
+	}
+	if provider == nil {
+		return []string{}, nil
+	}
+
+	models := make([]string, 0, len(provider.Models))
+	models = append(models, provider.Models...)
+	return models, nil
+}
+
+// ensureEnabledProviderUnique 保证全局只有一个启用中的 ai 提供商；currentID 为当前更新记录，新增时传 0。
 func (uc *AIProviderUseCase) ensureEnabledProviderUnique(ctx context.Context, currentID int64) error {
 	enabledProvider, err := uc.repo.FindEnabled(ctx)
 	if err != nil {
-		slog.ErrorContext(ctx, "查询启用中的 AI 提供商失败", "err", err)
+		slog.ErrorContext(ctx, "查询启用中的 ai 提供商失败", "err", err)
 		return err
 	}
 	if enabledProvider == nil {
@@ -222,20 +249,20 @@ func (uc *AIProviderUseCase) QueryModels(ctx context.Context, params dto.QueryAI
 
 	response, err := uc.modelClient.Do(request)
 	if err != nil {
-		slog.ErrorContext(ctx, "查询 AI 提供商模型列表失败", "err", err)
+		slog.ErrorContext(ctx, "查询 ai 提供商模型列表失败", "err", err)
 		return nil, common.AIProviderModelsQueryFailed
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
 		_, _ = io.Copy(io.Discard, response.Body)
-		slog.ErrorContext(ctx, "AI 提供商模型列表响应状态异常", "status", response.StatusCode)
+		slog.ErrorContext(ctx, "ai 提供商模型列表响应状态异常", "status", response.StatusCode)
 		return nil, common.AIProviderModelsQueryFailed
 	}
 
 	var payload openAIModelsResponse
 	if err := json.NewDecoder(response.Body).Decode(&payload); err != nil {
-		slog.ErrorContext(ctx, "解析 AI 提供商模型列表失败", "err", err)
+		slog.ErrorContext(ctx, "解析 ai 提供商模型列表失败", "err", err)
 		return nil, common.AIProviderModelsQueryFailed
 	}
 
@@ -257,7 +284,7 @@ func (uc *AIProviderUseCase) QueryModels(ctx context.Context, params dto.QueryAI
 func (uc *AIProviderUseCase) toDetail(ctx context.Context, provider *data.AIProvider) (*AIProviderDetail, error) {
 	apiKey, err := uc.cipher.Decrypt(provider.APIKeyEncrypted)
 	if err != nil {
-		slog.ErrorContext(ctx, "解密 AI 提供商 API Key 失败", "err", err)
+		slog.ErrorContext(ctx, "解密 ai 提供商 API Key 失败", "err", err)
 		return nil, common.AIProviderAPIKeyDecryptFailed
 	}
 

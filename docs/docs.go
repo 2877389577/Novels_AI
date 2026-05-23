@@ -26,14 +26,14 @@ const docTemplate = `{
     "paths": {
         "/ai-providers": {
             "get": {
-                "description": "分页查询 AI 提供商列表，列表不返回 API Key",
+                "description": "分页查询 ai 提供商列表，列表不返回 API Key",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "ai-provider"
                 ],
-                "summary": "查询 AI 提供商列表",
+                "summary": "查询 ai 提供商列表",
                 "parameters": [
                     {
                         "type": "integer",
@@ -88,7 +88,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "创建 AI 提供商，API Key 入库前会加密",
+                "description": "创建 ai 提供商，API Key 入库前会加密",
                 "consumes": [
                     "application/json"
                 ],
@@ -98,10 +98,10 @@ const docTemplate = `{
                 "tags": [
                     "ai-provider"
                 ],
-                "summary": "新增 AI 提供商",
+                "summary": "新增 ai 提供商",
                 "parameters": [
                     {
-                        "description": "AI 提供商信息",
+                        "description": "ai 提供商信息",
                         "name": "provider",
                         "in": "body",
                         "required": true,
@@ -150,6 +150,64 @@ const docTemplate = `{
                 }
             }
         },
+        "/ai-providers/enable": {
+            "post": {
+                "description": "将当前已启用的 ai 提供商全部设为未启用，再启用请求中指定的 ai 提供商",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ai-provider"
+                ],
+                "summary": "一键启用 ai 提供商",
+                "parameters": [
+                    {
+                        "description": "需要启用的 ai 提供商 ID",
+                        "name": "provider",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.EnableAIProviderRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "未登录",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "ai 提供商不存在",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "系统错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.SystemError"
+                        }
+                    }
+                }
+            }
+        },
         "/ai-providers/models/query": {
             "post": {
                 "description": "使用前端传入的 baseUrl 和 apiKey，按 OpenAI 兼容 /v1/models 协议查询模型 ID 列表；不会写入数据库",
@@ -162,10 +220,10 @@ const docTemplate = `{
                 "tags": [
                     "ai-provider"
                 ],
-                "summary": "查询 AI 提供商模型列表",
+                "summary": "查询 ai 提供商模型列表",
                 "parameters": [
                     {
-                        "description": "AI 提供商连接信息",
+                        "description": "ai 提供商连接信息",
                         "name": "provider",
                         "in": "body",
                         "required": true,
@@ -212,7 +270,7 @@ const docTemplate = `{
                         }
                     },
                     "502": {
-                        "description": "AI 提供商模型查询失败",
+                        "description": "ai 提供商模型查询失败",
                         "schema": {
                             "$ref": "#/definitions/common.Response"
                         }
@@ -222,18 +280,18 @@ const docTemplate = `{
         },
         "/ai-providers/{id}": {
             "get": {
-                "description": "按 ID 查询 AI 提供商详情，返回解密后的 API Key",
+                "description": "按 ID 查询 ai 提供商详情，返回解密后的 API Key",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "ai-provider"
                 ],
-                "summary": "查询 AI 提供商详情",
+                "summary": "查询 ai 提供商详情",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "AI 提供商 ID",
+                        "description": "ai 提供商 ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -271,7 +329,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "AI 提供商不存在",
+                        "description": "ai 提供商不存在",
                         "schema": {
                             "$ref": "#/definitions/common.Response"
                         }
@@ -285,7 +343,7 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "按 ID 全量更新 AI 提供商，API Key 会重新加密",
+                "description": "按 ID 全量更新 ai 提供商，API Key 会重新加密",
                 "consumes": [
                     "application/json"
                 ],
@@ -295,17 +353,17 @@ const docTemplate = `{
                 "tags": [
                     "ai-provider"
                 ],
-                "summary": "更新 AI 提供商",
+                "summary": "更新 ai 提供商",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "AI 提供商 ID",
+                        "description": "ai 提供商 ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "AI 提供商信息",
+                        "description": "ai 提供商信息",
                         "name": "provider",
                         "in": "body",
                         "required": true,
@@ -346,7 +404,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "AI 提供商不存在",
+                        "description": "ai 提供商不存在",
                         "schema": {
                             "$ref": "#/definitions/common.Response"
                         }
@@ -360,18 +418,18 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "按 ID 物理删除 AI 提供商",
+                "description": "按 ID 物理删除 ai 提供商",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "ai-provider"
                 ],
-                "summary": "删除 AI 提供商",
+                "summary": "删除 ai 提供商",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "AI 提供商 ID",
+                        "description": "ai 提供商 ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -397,7 +455,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "AI 提供商不存在",
+                        "description": "ai 提供商不存在",
                         "schema": {
                             "$ref": "#/definitions/common.Response"
                         }
@@ -1759,11 +1817,11 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "baseUrl": {
-                    "description": "AI 提供商基础 URL",
+                    "description": "ai 提供商基础 URL",
                     "type": "string"
                 },
                 "configJson": {
-                    "description": "AI 提供商额外配置",
+                    "description": "ai 提供商额外配置",
                     "type": "object"
                 },
                 "createdAt": {
@@ -1771,7 +1829,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
-                    "description": "AI 提供商 ID",
+                    "description": "ai 提供商 ID",
                     "type": "integer"
                 },
                 "isEnabled": {
@@ -1798,11 +1856,11 @@ const docTemplate = `{
                     }
                 },
                 "name": {
-                    "description": "AI 提供商名称",
+                    "description": "ai 提供商名称",
                     "type": "string"
                 },
                 "providerType": {
-                    "description": "AI 提供商类型",
+                    "description": "ai 提供商类型",
                     "type": "string"
                 },
                 "updatedAt": {
@@ -1854,11 +1912,11 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "baseUrl": {
-                    "description": "AI 提供商基础 URL，必填。",
+                    "description": "ai 提供商基础 URL，必填。",
                     "type": "string"
                 },
                 "configJson": {
-                    "description": "AI 提供商额外配置。",
+                    "description": "ai 提供商额外配置。",
                     "type": "object"
                 },
                 "isEnabled": {
@@ -1885,11 +1943,11 @@ const docTemplate = `{
                     }
                 },
                 "name": {
-                    "description": "AI 提供商名称，必填。",
+                    "description": "ai 提供商名称，必填。",
                     "type": "string"
                 },
                 "providerType": {
-                    "description": "AI 提供商类型，必填。",
+                    "description": "ai 提供商类型，必填。",
                     "type": "string"
                 }
             }
@@ -2012,6 +2070,18 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.EnableAIProviderRequest": {
+            "type": "object",
+            "required": [
+                "id"
+            ],
+            "properties": {
+                "id": {
+                    "description": "ID 是需要被设置为启用状态的 ai 提供商主键。",
+                    "type": "integer"
+                }
+            }
+        },
         "dto.PasswordRequest": {
             "type": "object",
             "required": [
@@ -2036,7 +2106,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "baseUrl": {
-                    "description": "AI 提供商基础 URL，后端会按 OpenAI 兼容协议拼接到 /v1/models。",
+                    "description": "ai 提供商基础 URL，后端会按 OpenAI 兼容协议拼接到 /v1/models。",
                     "type": "string"
                 }
             }
@@ -2055,11 +2125,11 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "baseUrl": {
-                    "description": "AI 提供商基础 URL，必填。",
+                    "description": "ai 提供商基础 URL，必填。",
                     "type": "string"
                 },
                 "configJson": {
-                    "description": "AI 提供商额外配置。",
+                    "description": "ai 提供商额外配置。",
                     "type": "object"
                 },
                 "isEnabled": {
@@ -2086,11 +2156,11 @@ const docTemplate = `{
                     }
                 },
                 "name": {
-                    "description": "AI 提供商名称，必填。",
+                    "description": "ai 提供商名称，必填。",
                     "type": "string"
                 },
                 "providerType": {
-                    "description": "AI 提供商类型，必填。",
+                    "description": "ai 提供商类型，必填。",
                     "type": "string"
                 }
             }

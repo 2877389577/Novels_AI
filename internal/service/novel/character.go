@@ -112,7 +112,7 @@ func (service *CharacterService) Create(c *gin.Context) {
 
 	var request dto.CreateCharacterRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
-		_ = c.Error(common.InvalidRequest)
+		_ = c.Error(common.InvalidRequestWithValidationMessage(request, err))
 		return
 	}
 	request.NovelID = novelID
@@ -233,7 +233,7 @@ func (service *CharacterService) Update(c *gin.Context) {
 
 	var request dto.UpdateCharacterRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
-		_ = c.Error(common.InvalidRequest)
+		_ = c.Error(common.InvalidRequestWithValidationMessage(request, err))
 		return
 	}
 	request.NovelID = novelID

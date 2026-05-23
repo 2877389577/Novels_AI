@@ -68,7 +68,7 @@ func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, upl
 	characterUseCase := novelbiz.NewCharacterUseCase(novelData, characterData)
 	characterService := novelservice.NewCharacterService(characterUseCase)
 
-	// AI 提供商相关接口
+	// ai 提供商相关接口
 	aiProviderData := data.NewAIProviderData(db)
 	aiProviderUseCase := aiproviderbiz.NewAIProviderUseCase(aiProviderData, apiKeyCipher)
 	aiProviderService := aiproviderservice.NewAIProviderService(aiProviderUseCase)
@@ -104,11 +104,13 @@ func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, upl
 	novelGroup.PUT("/:id/characters/:characterId", characterService.Update)
 	novelGroup.DELETE("/:id/characters/:characterId", characterService.Delete)
 
-	// AI 提供商接口需要登录会话，避免匿名用户读取或维护模型密钥。
+	// ai 提供商接口需要登录会话，避免匿名用户读取或维护模型密钥。
 	aiProviderGroup := group.Group("/ai-providers", middleware.SessionAuth())
 	aiProviderGroup.POST("", aiProviderService.Create)
 	aiProviderGroup.POST("/models/query", aiProviderService.QueryModels)
+	aiProviderGroup.POST("/enable", aiProviderService.Enable)
 	aiProviderGroup.GET("", aiProviderService.List)
+	aiProviderGroup.GET("/models", aiProviderService.ListEnabledModels)
 	aiProviderGroup.GET("/:id", aiProviderService.Get)
 	aiProviderGroup.PUT("/:id", aiProviderService.Update)
 	aiProviderGroup.DELETE("/:id", aiProviderService.Delete)

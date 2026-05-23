@@ -35,7 +35,7 @@ func main() {
 	// 后续代码可以直接使用 slog.Info/slog.Error 等包级函数，不需要层层传递 logger。
 	slog.SetDefault(logger)
 
-	// 初始化 AI 提供商 API Key 加解密器，配置缺失时直接阻止服务启动。
+	// 初始化 ai 提供商 API Key 加解密器，配置缺失时直接阻止服务启动。
 	apiKeyCrypto, err := common.NewAPIKeyCrypto(config.AIProvider.Crypto.Secret, config.AIProvider.Crypto.Salt)
 	if err != nil {
 		slog.Error("init ai provider api key crypto failed", "error", err)

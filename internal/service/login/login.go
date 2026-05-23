@@ -117,10 +117,7 @@ func (service *LoginService) Login(c *gin.Context) {
 func bindPassword(c *gin.Context) (dto.PasswordRequest, bool) {
 	var request dto.PasswordRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, &common.Response{
-			Code: http.StatusBadRequest,
-			Msg:  "请求参数错误",
-		})
+		_ = c.Error(common.InvalidRequestWithValidationMessage(request, err))
 		return dto.PasswordRequest{}, false
 	}
 

@@ -3,7 +3,7 @@ package dto
 // CreateNovelRequest 是新增小说接口和业务层共用的请求参数。
 type CreateNovelRequest struct {
 	// 书名，必填。
-	Title string `json:"title" binding:"required"`
+	Title string `json:"title" binding:"required" validatormsg:"书名不能为空"`
 	// 小说简介。
 	Intro string `json:"intro"`
 	// 小说作者。
@@ -17,9 +17,9 @@ type CreateNovelRequest struct {
 // UpdateNovelRequest 是全量更新小说接口和业务层共用的请求参数。
 type UpdateNovelRequest struct {
 	// 小说 ID，必填。
-	ID uint `json:"id" binding:"required"`
+	ID uint `json:"id" binding:"required" validatormsg:"小说ID不能为空"`
 	// 书名，必填。
-	Title string `json:"title" binding:"required"`
+	Title string `json:"title" binding:"required" validatormsg:"书名不能为空"`
 	// 小说简介。
 	Intro string `json:"intro"`
 	// 小说作者。
@@ -27,7 +27,7 @@ type UpdateNovelRequest struct {
 	// 小说封面 URL。
 	CoverURL string `json:"coverUrl"`
 	// 小说字数。
-	WordCount int64 `json:"wordCount" binding:"gte=0"`
+	WordCount int64 `json:"wordCount" binding:"gte=0" validatormsg:"小说字数不能小于0"`
 	// 小说元数据（标签信息）。
 	Metadata JSONField `json:"metadata" swaggertype:"object"`
 }
@@ -37,13 +37,13 @@ type CreateChapterRequest struct {
 	// 小说 ID 来自路径参数，不从请求体读取。
 	NovelID int64 `json:"-"`
 	// 章节编号，必填且大于 0。
-	ChapterNo int `json:"chapterNo" binding:"required,gt=0"`
+	ChapterNo int `json:"chapterNo" binding:"required,gt=0" validatormsg:"章节编号不正确"`
 	// 章节标题，必填。
-	Title string `json:"title" binding:"required"`
+	Title string `json:"title" binding:"required" validatormsg:"章节标题不能为空"`
 	// 章节内容，必填。
-	Content string `json:"content" binding:"required"`
+	Content string `json:"content" binding:"required" validatormsg:"章节内容不能为空"`
 	// 章节字数，不能小于 0。
-	WordCount int `json:"wordCount" binding:"gte=0"`
+	WordCount int `json:"wordCount" binding:"gte=0" validatormsg:"章节字数不能小于0"`
 }
 
 // UpdateChapterRequest 是全量更新章节接口和业务层共用的请求参数。
@@ -53,13 +53,13 @@ type UpdateChapterRequest struct {
 	// 章节 ID 来自路径参数，不从请求体读取。
 	ChapterID uint `json:"-"`
 	// 章节编号，必填且大于 0。
-	ChapterNo int `json:"chapterNo" binding:"required,gt=0"`
+	ChapterNo int `json:"chapterNo" binding:"required,gt=0" validatormsg:"章节编号不正确"`
 	// 章节标题，必填。
-	Title string `json:"title" binding:"required"`
+	Title string `json:"title" binding:"required" validatormsg:"章节标题不能为空"`
 	// 章节内容，必填。
-	Content string `json:"content" binding:"required"`
+	Content string `json:"content" binding:"required" validatormsg:"章节内容不能为空"`
 	// 章节字数，不能小于 0。
-	WordCount int `json:"wordCount" binding:"gte=0"`
+	WordCount int `json:"wordCount" binding:"gte=0" validatormsg:"章节字数不能小于0"`
 }
 
 // CreateCharacterRequest 是新增角色接口和业务层共用的请求参数。
@@ -67,7 +67,7 @@ type CreateCharacterRequest struct {
 	// 小说 ID 来自路径参数，不从请求体读取。
 	NovelID int64 `json:"-"`
 	// 角色名称，必填。
-	Name string `json:"name" binding:"required"`
+	Name string `json:"name" binding:"required" validatormsg:"角色名称不能为空"`
 	// 角色性别。
 	Gender string `json:"gender"`
 	// 角色介绍。
@@ -101,7 +101,7 @@ type UpdateCharacterRequest struct {
 	// 角色 ID 来自路径参数，不从请求体读取。
 	CharacterID uint `json:"-"`
 	// 角色名称，必填。
-	Name string `json:"name" binding:"required"`
+	Name string `json:"name" binding:"required" validatormsg:"角色名称不能为空"`
 	// 角色性别。
 	Gender string `json:"gender"`
 	// 角色介绍。
