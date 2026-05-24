@@ -2137,6 +2137,78 @@
                 }
             }
         },
+        "/novels/{id}/content/optimize": {
+            "post": {
+                "description": "对用户在编辑器中选中的小说段落进行 AI 文笔润色。请求体只包含用户选中的原文和优化方向；优化方向可为空，表示按系统默认提示词做通用润色。该接口只返回优化结果，不会修改章节正文或写入数据库。AI 必须通过 novel_content_optimize_tool 返回结构化字段：optimizedContent 为优化后的正文，approved 表示是否同意优化，rejectReason 表示拒绝原因。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "novel-content"
+                ],
+                "summary": "优化小说正文",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "小说 ID，必须是正整数，用于确认本次优化归属的小说存在",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "大模型名称，例如 doubao-xxx；后端会使用当前启用 AI 提供商的 BaseURL 和 API Key 初始化该模型",
+                        "name": "modelName",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "description": "正文优化请求参数。selectedContent 为用户选中的小说原文段落，必填；optimizeDirection 为用户输入的优化方向，可为空",
+                        "name": "content",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.OptimizeNovelContentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "code = 0 表示请求成功；data.optimizedContent 为优化后的正文；data.approved 为是否同意优化；data.rejectReason 为拒绝理由",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/ai_tools.NovelContentOptimizeTool"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误，例如小说 ID 不是正整数、modelName 为空或 selectedContent 为空",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "系统错误，例如读取提示词失败、API Key 解密失败或上游模型调用失败",
+                        "schema": {
+                            "$ref": "#/definitions/common.SystemError"
+                        }
+                    }
+                }
+            }
+        },
         "/upload": {
             "post": {
                 "description": "使用 S3 兼容对象存储上传文件，返回公开访问地址",
@@ -2220,6 +2292,20 @@
                     "type": "string"
                 },
                 "personality": {
+                    "type": "string"
+                }
+            }
+        },
+        "ai_tools.NovelContentOptimizeTool": {
+            "type": "object",
+            "properties": {
+                "approved": {
+                    "type": "boolean"
+                },
+                "optimizedContent": {
+                    "type": "string"
+                },
+                "rejectReason": {
                     "type": "string"
                 }
             }
@@ -2657,6 +2743,22 @@
                 "id": {
                     "description": "ID 是需要被设置为启用状态的 ai 提供商主键。",
                     "type": "integer"
+                }
+            }
+        },
+        "dto.OptimizeNovelContentRequest": {
+            "type": "object",
+            "required": [
+                "selectedContent"
+            ],
+            "properties": {
+                "optimizeDirection": {
+                    "description": "用户输入的优化方向，可为空；为空时业务层按系统提示词做通用文笔优化。",
+                    "type": "string"
+                },
+                "selectedContent": {
+                    "description": "用户在编辑器中选中的小说原文段落，必填。",
+                    "type": "string"
                 }
             }
         },

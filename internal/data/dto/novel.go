@@ -62,6 +62,18 @@ type UpdateChapterRequest struct {
 	WordCount int `json:"wordCount" binding:"gte=0" validatormsg:"章节字数不能小于0"`
 }
 
+// OptimizeNovelContentRequest 是小说正文优化接口和业务层共用的请求参数。
+type OptimizeNovelContentRequest struct {
+	// 小说 ID 来自路径参数，不从请求体读取。
+	NovelID int64 `json:"-"`
+	// 大模型名称来自 query 参数，不占用请求体中的业务字段。
+	ModelName string `json:"-"`
+	// 用户在编辑器中选中的小说原文段落，必填。
+	SelectedContent string `json:"selectedContent" binding:"required" validatormsg:"优化内容不能为空"`
+	// 用户输入的优化方向，可为空；为空时业务层按系统提示词做通用文笔优化。
+	OptimizeDirection string `json:"optimizeDirection"`
+}
+
 // CreateCharacterRequest 是新增角色接口和业务层共用的请求参数。
 type CreateCharacterRequest struct {
 	// 小说 ID 来自路径参数，不从请求体读取。

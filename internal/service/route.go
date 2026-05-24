@@ -68,6 +68,8 @@ func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, upl
 	aiProviderData := data.NewAIProviderData(db)
 	aiProviderUseCase := aiproviderbiz.NewAIProviderUseCase(aiProviderData, apiKeyCipher)
 	aiProviderService := aiproviderservice.NewAIProviderService(aiProviderUseCase)
+	contentOptimizationUseCase := novelbiz.NewContentOptimizationUseCase(novelData, aiProviderData, apiKeyCipher)
+	contentOptimizationService := novelservice.NewContentOptimizationService(contentOptimizationUseCase)
 
 	// 角色相关接口
 	characterData := data.NewCharacterData(db)
@@ -97,6 +99,7 @@ func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, upl
 	novelGroup.GET("/:id", novelService.Get)
 	novelGroup.PUT("/update", novelService.Update)
 	novelGroup.DELETE("/:id", novelService.Delete)
+	novelGroup.POST("/:id/content/optimize", contentOptimizationService.Optimize)
 	novelGroup.POST("/:id/chapters", chapterService.Create)
 	novelGroup.GET("/:id/chapters", chapterService.List)
 	novelGroup.GET("/:id/chapters/:chapterId", chapterService.Get)

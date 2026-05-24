@@ -96,6 +96,13 @@ var (
 )
 
 var (
+	// NovelContentOptimizeNoResult 表示模型没有按要求调用正文优化 tool 返回结构化结果。
+	NovelContentOptimizeNoResult = NewHTTPError(http.StatusBadGateway, 7000, "AI未返回内容优化结果")
+	// NovelContentOptimizePromptReadFailed 表示服务端无法读取正文优化系统提示词文件。
+	NovelContentOptimizePromptReadFailed = NewHTTPError(http.StatusInternalServerError, 7001, "读取小说内容优化提示词失败")
+)
+
+var (
 	// CharacterNameRequired 表示角色名缺失，角色名是角色资料中唯一强制要求的业务字段。
 	CharacterNameRequired = NewHTTPError(http.StatusBadRequest, 5000, "角色名称不能为空")
 	// CharacterNotFound 表示当前小说下没有找到指定角色，避免跨小说误操作其他角色。
