@@ -16,6 +16,7 @@
 1. Add detailed Chinese comments to the code you write.
 2. Do not write excessive defensive code.
 3. Avoid using `else` where possible; in scenarios requiring many `if-else` statements, use `switch` instead.
+4. The swagger documentation is generated using the command `swag init -g .\internal\service\route.go`.
 
 
 # AGENTS.md

@@ -100,6 +100,12 @@ var (
 	CharacterNameRequired = NewHTTPError(http.StatusBadRequest, 5000, "角色名称不能为空")
 	// CharacterNotFound 表示当前小说下没有找到指定角色，避免跨小说误操作其他角色。
 	CharacterNotFound = NewHTTPError(http.StatusNotFound, 5001, "角色不存在")
+	// CharacterRelationNotFound 表示当前小说下没有找到指定角色关系。
+	CharacterRelationNotFound = NewHTTPError(http.StatusNotFound, 5002, "角色关系不存在")
+	// CharacterRelationExists 表示同一小说、同一组角色和同一关系类型下已经存在有效关系。
+	CharacterRelationExists = NewHTTPError(http.StatusConflict, 5003, "角色关系已存在")
+	// CharacterRelationSelfNotAllowed 表示不能把一个角色关联到自己。
+	CharacterRelationSelfNotAllowed = NewHTTPError(http.StatusBadRequest, 5004, "不能创建角色和自己的关系")
 )
 
 var (

@@ -100,6 +100,47 @@ definitions:
         description: Msg 是展示给调用方的错误提示，保持和业务错误定义在同一处维护。
         type: string
     type: object
+  dto.CharacterRelationNodeLayoutRequest:
+    properties:
+      characterId:
+        description: 角色 ID，必须属于当前小说。
+        type: integer
+      extraData:
+        description: 节点扩展数据，用于保存前端未来新增的非固定字段。
+        type: object
+      height:
+        description: 节点高度，前端需要记忆尺寸时传入。
+        type: number
+      hidden:
+        description: 是否隐藏该节点。
+        type: boolean
+      locked:
+        description: 是否锁定该节点位置。
+        type: boolean
+      positionX:
+        description: 节点在画布上的 X 坐标。
+        type: number
+      positionY:
+        description: 节点在画布上的 Y 坐标。
+        type: number
+      status:
+        description: 节点状态：1 启用，2 停用。不传时默认 1。
+        enum:
+        - 1
+        - 2
+        type: integer
+      style:
+        description: 节点展示样式，保存 Vue Flow 需要的样式扩展。
+        type: object
+      type:
+        description: Vue Flow 节点类型，不传时默认 character。
+        type: string
+      width:
+        description: 节点宽度，前端需要记忆尺寸时传入。
+        type: number
+    required:
+    - characterId
+    type: object
   dto.CreateAIProviderRequest:
     properties:
       apiKey:
@@ -159,6 +200,62 @@ definitions:
     - chapterNo
     - content
     - title
+    type: object
+  dto.CreateCharacterRelationRequest:
+    properties:
+      animated:
+        description: 是否用动画线展示关系。
+        type: boolean
+      description:
+        description: 关系说明，用于展示两个角色关系的背景或补充信息。
+        type: string
+      direction:
+        description: 关系方向：1 单向，2 双向或无向。不传时默认 2。
+        enum:
+        - 1
+        - 2
+        type: integer
+      edgeType:
+        description: Vue Flow 边类型，不传时默认 default。
+        type: string
+      extraData:
+        description: 关系扩展数据，用于保存前端未来新增的非固定字段。
+        type: object
+      relationLabel:
+        description: 关系展示名称，例如 父女、好友、宿敌、师徒。
+        type: string
+      relationType:
+        description: 关系类型编码，例如 family、friend、enemy、lover、teacher、other。
+        type: string
+      sortOrder:
+        description: 排序值，前端可用于控制多条关系线的展示顺序。
+        type: integer
+      sourceCharacterId:
+        description: 起始角色 ID，对应 Vue Flow edge.source。
+        type: integer
+      sourceHandle:
+        description: Vue Flow 起始连接桩 ID。
+        type: string
+      status:
+        description: 关系状态：1 启用，2 停用。不传时默认 1。
+        enum:
+        - 1
+        - 2
+        type: integer
+      style:
+        description: 关系线展示样式，保存 Vue Flow 需要的样式扩展。
+        type: object
+      targetCharacterId:
+        description: 目标角色 ID，对应 Vue Flow edge.target。
+        type: integer
+      targetHandle:
+        description: Vue Flow 目标连接桩 ID。
+        type: string
+    required:
+    - relationLabel
+    - relationType
+    - sourceCharacterId
+    - targetCharacterId
     type: object
   dto.CreateCharacterRequest:
     properties:
@@ -254,6 +351,17 @@ definitions:
     - apiKey
     - baseUrl
     type: object
+  dto.SaveCharacterRelationNodeLayoutsRequest:
+    properties:
+      nodes:
+        description: 需要保存布局的节点列表，至少传入一个节点。
+        items:
+          $ref: '#/definitions/dto.CharacterRelationNodeLayoutRequest'
+        minItems: 1
+        type: array
+    required:
+    - nodes
+    type: object
   dto.UpdateAIProviderRequest:
     properties:
       apiKey:
@@ -313,6 +421,64 @@ definitions:
     - chapterNo
     - content
     - title
+    type: object
+  dto.UpdateCharacterRelationRequest:
+    properties:
+      animated:
+        description: 是否用动画线展示关系。
+        type: boolean
+      description:
+        description: 关系说明，用于展示两个角色关系的背景或补充信息。
+        type: string
+      direction:
+        description: 关系方向：1 单向，2 双向或无向。
+        enum:
+        - 1
+        - 2
+        type: integer
+      edgeType:
+        description: Vue Flow 边类型，不传时默认 default。
+        type: string
+      extraData:
+        description: 关系扩展数据，用于保存前端未来新增的非固定字段。
+        type: object
+      relationLabel:
+        description: 关系展示名称，例如 父女、好友、宿敌、师徒。
+        type: string
+      relationType:
+        description: 关系类型编码，例如 family、friend、enemy、lover、teacher、other。
+        type: string
+      sortOrder:
+        description: 排序值，前端可用于控制多条关系线的展示顺序。
+        type: integer
+      sourceCharacterId:
+        description: 起始角色 ID，对应 Vue Flow edge.source。
+        type: integer
+      sourceHandle:
+        description: Vue Flow 起始连接桩 ID。
+        type: string
+      status:
+        description: 关系状态：1 启用，2 停用。
+        enum:
+        - 1
+        - 2
+        type: integer
+      style:
+        description: 关系线展示样式，保存 Vue Flow 需要的样式扩展。
+        type: object
+      targetCharacterId:
+        description: 目标角色 ID，对应 Vue Flow edge.target。
+        type: integer
+      targetHandle:
+        description: Vue Flow 目标连接桩 ID。
+        type: string
+    required:
+    - direction
+    - relationLabel
+    - relationType
+    - sourceCharacterId
+    - status
+    - targetCharacterId
     type: object
   dto.UpdateCharacterRequest:
     properties:
@@ -488,6 +654,273 @@ definitions:
       total:
         type: integer
     type: object
+  novel.characterRelationGraphEdgeDataResponse:
+    properties:
+      description:
+        description: 关系说明。
+        type: string
+      direction:
+        description: 关系方向：1 单向，2 双向或无向。
+        type: integer
+      extraData:
+        description: 关系扩展数据。
+        type: object
+      novelId:
+        description: 小说 ID。
+        type: integer
+      relationId:
+        description: 角色关系 ID。
+        type: integer
+      relationLabel:
+        description: 关系展示名称。
+        type: string
+      relationType:
+        description: 关系类型编码。
+        type: string
+      sortOrder:
+        description: 排序值。
+        type: integer
+      sourceCharacterId:
+        description: 起始角色 ID。
+        type: integer
+      status:
+        description: 关系状态：1 启用，2 停用。
+        type: integer
+      targetCharacterId:
+        description: 目标角色 ID。
+        type: integer
+    type: object
+  novel.characterRelationGraphEdgeResponse:
+    properties:
+      animated:
+        description: 是否动画展示。
+        type: boolean
+      data:
+        allOf:
+        - $ref: '#/definitions/novel.characterRelationGraphEdgeDataResponse'
+        description: 关系业务数据和扩展数据。
+      id:
+        description: Vue Flow 边 ID，等于角色关系 ID 的字符串形式。
+        type: string
+      label:
+        description: 关系展示名称，会展示在线条标签上。
+        type: string
+      source:
+        description: Vue Flow 起始节点 ID，等于起始角色 ID 的字符串形式。
+        type: string
+      sourceHandle:
+        description: 起始连接桩 ID。
+        type: string
+      style:
+        description: Vue Flow 边样式。
+        type: object
+      target:
+        description: Vue Flow 目标节点 ID，等于目标角色 ID 的字符串形式。
+        type: string
+      targetHandle:
+        description: 目标连接桩 ID。
+        type: string
+      type:
+        description: Vue Flow 边类型，默认 default。
+        type: string
+    type: object
+  novel.characterRelationGraphNodeDataResponse:
+    properties:
+      appearanceImgUrl:
+        description: 角色形象图 URL。
+        type: string
+      characterId:
+        description: 角色 ID。
+        type: integer
+      characterStatus:
+        description: 角色状态：1 在线，2 下线。
+        type: integer
+      charactersTags:
+        description: 角色标签。
+        items:
+          type: string
+        type: array
+      extraData:
+        description: 节点扩展数据。
+        type: object
+      gender:
+        description: 角色性别。
+        type: string
+      layoutId:
+        description: 节点布局 ID，未保存布局时为空。
+        type: integer
+      locked:
+        description: 是否锁定节点位置。
+        type: boolean
+      name:
+        description: 角色名称。
+        type: string
+      nodeStatus:
+        description: 节点布局状态：1 启用，2 停用。
+        type: integer
+      novelId:
+        description: 小说 ID。
+        type: integer
+    type: object
+  novel.characterRelationGraphNodeResponse:
+    properties:
+      data:
+        allOf:
+        - $ref: '#/definitions/novel.characterRelationGraphNodeDataResponse'
+        description: 节点渲染所需角色数据和扩展数据。
+      height:
+        description: 节点高度，未保存时为空。
+        type: number
+      hidden:
+        description: 是否隐藏节点。
+        type: boolean
+      id:
+        description: Vue Flow 节点 ID，等于角色 ID 的字符串形式。
+        type: string
+      locked:
+        description: 是否锁定节点位置。
+        type: boolean
+      position:
+        allOf:
+        - $ref: '#/definitions/novel.vueFlowPositionResponse'
+        description: Vue Flow 节点位置。
+      style:
+        description: Vue Flow 节点样式。
+        type: object
+      type:
+        description: Vue Flow 节点类型，默认 character。
+        type: string
+      width:
+        description: 节点宽度，未保存时为空。
+        type: number
+    type: object
+  novel.characterRelationGraphResponse:
+    properties:
+      edges:
+        description: Vue Flow 边列表，边 ID 使用角色关系 ID 的字符串形式。
+        items:
+          $ref: '#/definitions/novel.characterRelationGraphEdgeResponse'
+        type: array
+      nodes:
+        description: Vue Flow 节点列表，节点 ID 使用角色 ID 的字符串形式。
+        items:
+          $ref: '#/definitions/novel.characterRelationGraphNodeResponse'
+        type: array
+    type: object
+  novel.characterRelationListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/novel.characterRelationResponse'
+        type: array
+      total:
+        type: integer
+    type: object
+  novel.characterRelationNodeLayoutResponse:
+    properties:
+      characterId:
+        description: 角色 ID。
+        type: integer
+      createdAt:
+        description: 创建时间。
+        type: string
+      extraData:
+        description: 节点扩展数据。
+        type: object
+      height:
+        description: 节点高度。
+        type: number
+      hidden:
+        description: 是否隐藏。
+        type: boolean
+      id:
+        description: 节点布局 ID。
+        type: integer
+      locked:
+        description: 是否锁定。
+        type: boolean
+      novelId:
+        description: 小说 ID。
+        type: integer
+      positionX:
+        description: X 坐标。
+        type: number
+      positionY:
+        description: Y 坐标。
+        type: number
+      status:
+        description: 节点状态：1 启用，2 停用。
+        type: integer
+      style:
+        description: 节点样式。
+        type: object
+      type:
+        description: Vue Flow 节点类型。
+        type: string
+      updatedAt:
+        description: 更新时间。
+        type: string
+      width:
+        description: 节点宽度。
+        type: number
+    type: object
+  novel.characterRelationResponse:
+    properties:
+      animated:
+        description: 是否动画展示。
+        type: boolean
+      createdAt:
+        description: 创建时间。
+        type: string
+      description:
+        description: 关系说明。
+        type: string
+      direction:
+        description: 关系方向：1 单向，2 双向或无向。
+        type: integer
+      edgeType:
+        description: Vue Flow 边类型。
+        type: string
+      extraData:
+        description: 关系扩展数据。
+        type: object
+      id:
+        description: 角色关系 ID。
+        type: integer
+      novelId:
+        description: 小说 ID。
+        type: integer
+      relationLabel:
+        description: 关系展示名称，例如 父女、好友、宿敌、师徒。
+        type: string
+      relationType:
+        description: 关系类型编码，例如 family、friend、enemy、lover、teacher、other。
+        type: string
+      sortOrder:
+        description: 排序值。
+        type: integer
+      sourceCharacterId:
+        description: 起始角色 ID。
+        type: integer
+      sourceHandle:
+        description: 起始连接桩 ID。
+        type: string
+      status:
+        description: 关系状态：1 启用，2 停用。
+        type: integer
+      style:
+        description: 关系线样式。
+        type: object
+      targetCharacterId:
+        description: 目标角色 ID。
+        type: integer
+      targetHandle:
+        description: 目标连接桩 ID。
+        type: string
+      updatedAt:
+        description: 更新时间。
+        type: string
+    type: object
   novel.characterResponse:
     properties:
       ability:
@@ -588,6 +1021,15 @@ definitions:
       wordCount:
         description: 小说字数
         type: integer
+    type: object
+  novel.vueFlowPositionResponse:
+    properties:
+      x:
+        description: X 坐标。
+        type: number
+      "y":
+        description: Y 坐标。
+        type: number
     type: object
   upload.uploadResponse:
     properties:
@@ -1350,6 +1792,334 @@ paths:
       summary: 查询下一章编号
       tags:
       - chapter
+  /novels/{id}/character-relation-graph:
+    get:
+      description: 查询指定小说下的角色关系图数据，返回 Vue Flow 可直接使用的 nodes 和 edges。nodes 中每个节点代表一个角色，id
+        为角色 ID 的字符串形式；edges 中每条边代表一条启用的角色关系，source 和 target 分别对应起始角色和目标角色。
+      parameters:
+      - description: 小说 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: code = 0 表示查询成功；data.nodes 为角色节点列表；data.edges 为角色关系连线列表
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/novel.characterRelationGraphResponse'
+              type: object
+        "400":
+          description: 请求参数错误，例如小说 ID 不是正整数
+          schema:
+            $ref: '#/definitions/common.Response'
+        "401":
+          description: 未登录
+          schema:
+            $ref: '#/definitions/common.Response'
+        "404":
+          description: 小说不存在
+          schema:
+            $ref: '#/definitions/common.Response'
+        "500":
+          description: 系统错误
+          schema:
+            $ref: '#/definitions/common.SystemError'
+      summary: 查询角色关系图
+      tags:
+      - character-relation
+  /novels/{id}/character-relation-graph/nodes/layout:
+    put:
+      consumes:
+      - application/json
+      description: 批量保存指定小说下角色节点在 Vue Flow 画布中的位置、尺寸、隐藏状态、锁定状态和样式。后端按 novelId + characterId
+        更新已有布局，不存在则新增；不会删除本次未提交的其他节点布局。
+      parameters:
+      - description: 小说 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 节点布局列表。nodes[].characterId 为角色 ID；nodes[].positionX 和 nodes[].positionY
+          为画布坐标；nodes[].style 和 nodes[].extraData 可保存前端扩展 JSON
+        in: body
+        name: layout
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SaveCharacterRelationNodeLayoutsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: code = 0 表示保存成功；data 返回本次保存后的节点布局
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/novel.characterRelationNodeLayoutResponse'
+                  type: array
+              type: object
+        "400":
+          description: 请求参数错误，例如节点列表为空、角色 ID 为空或节点状态不是 1/2
+          schema:
+            $ref: '#/definitions/common.Response'
+        "401":
+          description: 未登录
+          schema:
+            $ref: '#/definitions/common.Response'
+        "404":
+          description: 小说或角色不存在
+          schema:
+            $ref: '#/definitions/common.Response'
+        "500":
+          description: 系统错误
+          schema:
+            $ref: '#/definitions/common.SystemError'
+      summary: 保存角色关系图节点布局
+      tags:
+      - character-relation
+  /novels/{id}/character-relations:
+    get:
+      description: 查询指定小说下所有角色关系，包含启用和停用状态。该接口用于关系管理列表，关系图展示接口只返回 status = 1 的启用关系。
+      parameters:
+      - description: 小说 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: code = 0 表示查询成功；data.items 为关系列表；data.total 为关系总数
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/novel.characterRelationListResponse'
+              type: object
+        "400":
+          description: 请求参数错误，例如小说 ID 不是正整数
+          schema:
+            $ref: '#/definitions/common.Response'
+        "401":
+          description: 未登录
+          schema:
+            $ref: '#/definitions/common.Response'
+        "404":
+          description: 小说不存在
+          schema:
+            $ref: '#/definitions/common.Response'
+        "500":
+          description: 系统错误
+          schema:
+            $ref: '#/definitions/common.SystemError'
+      summary: 查询角色关系列表
+      tags:
+      - character-relation
+    post:
+      consumes:
+      - application/json
+      description: 给指定小说新增一条角色关系。sourceCharacterId 和 targetCharacterId 必须都属于当前小说，且不能相同；同一小说、同一组角色、同一
+        relationType 只能存在一条未删除关系。
+      parameters:
+      - description: 小说 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 角色关系信息。relationType 是关系类型编码；relationLabel 是前端展示名称；direction 为
+          1 单向、2 双向或无向；style 和 extraData 可保存前端扩展 JSON
+        in: body
+        name: relation
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateCharacterRelationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: code = 0 表示新增成功；data 为新增后的角色关系
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/novel.characterRelationResponse'
+              type: object
+        "400":
+          description: 请求参数错误，例如角色 ID 为空、关系类型为空、关系名称为空、方向或状态不正确、角色关联到自己
+          schema:
+            $ref: '#/definitions/common.Response'
+        "401":
+          description: 未登录
+          schema:
+            $ref: '#/definitions/common.Response'
+        "404":
+          description: 小说或角色不存在
+          schema:
+            $ref: '#/definitions/common.Response'
+        "409":
+          description: 角色关系已存在
+          schema:
+            $ref: '#/definitions/common.Response'
+        "500":
+          description: 系统错误
+          schema:
+            $ref: '#/definitions/common.SystemError'
+      summary: 新增角色关系
+      tags:
+      - character-relation
+  /novels/{id}/character-relations/{relationId}:
+    delete:
+      description: 物理删除指定小说下的角色关系。删除后该关系记录会从数据库移除，不会再出现在角色关系图 edges 中。
+      parameters:
+      - description: 小说 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 角色关系 ID
+        in: path
+        name: relationId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: code = 0 表示删除成功
+          schema:
+            $ref: '#/definitions/common.Response'
+        "400":
+          description: 请求参数错误，例如小说 ID 或关系 ID 不是正整数
+          schema:
+            $ref: '#/definitions/common.Response'
+        "401":
+          description: 未登录
+          schema:
+            $ref: '#/definitions/common.Response'
+        "404":
+          description: 小说或角色关系不存在
+          schema:
+            $ref: '#/definitions/common.Response'
+        "500":
+          description: 系统错误
+          schema:
+            $ref: '#/definitions/common.SystemError'
+      summary: 删除角色关系
+      tags:
+      - character-relation
+    get:
+      description: 查询指定小说下的单条角色关系详情，返回关系类型、展示名称、方向、样式和扩展数据等完整信息。
+      parameters:
+      - description: 小说 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 角色关系 ID
+        in: path
+        name: relationId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: code = 0 表示查询成功；data 为角色关系详情
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/novel.characterRelationResponse'
+              type: object
+        "400":
+          description: 请求参数错误，例如小说 ID 或关系 ID 不是正整数
+          schema:
+            $ref: '#/definitions/common.Response'
+        "401":
+          description: 未登录
+          schema:
+            $ref: '#/definitions/common.Response'
+        "404":
+          description: 小说或角色关系不存在
+          schema:
+            $ref: '#/definitions/common.Response'
+        "500":
+          description: 系统错误
+          schema:
+            $ref: '#/definitions/common.SystemError'
+      summary: 查询角色关系详情
+      tags:
+      - character-relation
+    put:
+      consumes:
+      - application/json
+      description: 全量更新指定小说下的角色关系。请求体需要传入完整关系信息；sourceCharacterId 和 targetCharacterId
+        必须都属于当前小说，且不能相同。
+      parameters:
+      - description: 小说 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 角色关系 ID
+        in: path
+        name: relationId
+        required: true
+        type: integer
+      - description: 角色关系信息。direction 必填且只能为 1 或 2；status 必填且只能为 1 或 2；style 和 extraData
+          会全量覆盖原值
+        in: body
+        name: relation
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateCharacterRelationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: code = 0 表示更新成功；data 为更新后的角色关系
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/novel.characterRelationResponse'
+              type: object
+        "400":
+          description: 请求参数错误，例如角色 ID 为空、关系类型为空、方向或状态不正确、角色关联到自己
+          schema:
+            $ref: '#/definitions/common.Response'
+        "401":
+          description: 未登录
+          schema:
+            $ref: '#/definitions/common.Response'
+        "404":
+          description: 小说、角色或角色关系不存在
+          schema:
+            $ref: '#/definitions/common.Response'
+        "409":
+          description: 角色关系已存在
+          schema:
+            $ref: '#/definitions/common.Response'
+        "500":
+          description: 系统错误
+          schema:
+            $ref: '#/definitions/common.SystemError'
+      summary: 修改角色关系
+      tags:
+      - character-relation
   /novels/{id}/characters:
     get:
       description: 分页查询指定小说的角色列表，列表只返回角色名、性别、图像 URL、状态和标签

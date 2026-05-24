@@ -73,6 +73,9 @@ func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, upl
 	characterData := data.NewCharacterData(db)
 	characterUseCase := novelbiz.NewCharacterUseCase(novelData, characterData, aiProviderData, chapterData, apiKeyCipher)
 	characterService := novelservice.NewCharacterService(characterUseCase)
+	characterRelationData := data.NewCharacterRelationData(db)
+	characterRelationUseCase := novelbiz.NewCharacterRelationUseCase(novelData, characterData, characterRelationData)
+	characterRelationService := novelservice.NewCharacterRelationService(characterRelationUseCase)
 
 	// 上传相关接口
 	s3UploadData := data.NewS3UploadData(uploadConfig)
@@ -106,6 +109,13 @@ func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, upl
 	novelGroup.GET("/:id/characters/:characterId", characterService.Get)
 	novelGroup.PUT("/:id/characters/:characterId", characterService.Update)
 	novelGroup.DELETE("/:id/characters/:characterId", characterService.Delete)
+	novelGroup.GET("/:id/character-relation-graph", characterRelationService.GetGraph)
+	novelGroup.PUT("/:id/character-relation-graph/nodes/layout", characterRelationService.SaveNodeLayouts)
+	novelGroup.GET("/:id/character-relations", characterRelationService.List)
+	novelGroup.POST("/:id/character-relations", characterRelationService.Create)
+	novelGroup.GET("/:id/character-relations/:relationId", characterRelationService.Get)
+	novelGroup.PUT("/:id/character-relations/:relationId", characterRelationService.Update)
+	novelGroup.DELETE("/:id/character-relations/:relationId", characterRelationService.Delete)
 
 	// ai 提供商接口需要登录会话，避免匿名用户读取或维护模型密钥。
 	aiProviderGroup := group.Group("/ai-providers", middleware.SessionAuth())

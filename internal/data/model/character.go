@@ -30,37 +30,51 @@ func (Character) TableName() string {
 	return "characters"
 }
 
-// CharacterRelationship 角色关系表，用于描述同一部小说中不同角色之间的关系，可用于前端人物关系图展示
-type CharacterRelationship struct {
-	ID int64 `gorm:"column:id;primaryKey;autoIncrement;comment:主键ID" json:"id"`
-
-	NovelID int64 `gorm:"column:novel_id;not null;comment:小说ID，表示该人物关系属于哪一部小说" json:"novel_id"`
-
-	SourceCharacterID int64 `gorm:"column:source_character_id;not null;comment:关系起点角色ID，例如“张三喜欢李四”中的张三" json:"source_character_id"`
-
-	TargetCharacterID int64 `gorm:"column:target_character_id;not null;comment:关系目标角色ID，例如“张三喜欢李四”中的李四" json:"target_character_id"`
-
-	RelationType string `gorm:"column:relation_type;type:varchar(100);not null;comment:关系类型，例如：朋友、敌人、恋人、亲人、师徒、上下级、合作、竞争、暗恋等" json:"relation_type"`
-
-	Description string `gorm:"column:description;type:text;comment:关系描述，用于详细说明两个角色之间的关系背景、变化过程或特殊说明" json:"description"`
-
-	Direction string `gorm:"column:direction;type:varchar(50);not null;default:directed;comment:关系方向。directed表示有方向关系，例如A暗恋B；undirected表示无方向关系，例如A和B是朋友" json:"direction"`
-
-	Strength int `gorm:"column:strength;not null;default:1;comment:关系强度，数值越大表示关系越强烈。例如1表示弱关系，5表示强关系，10表示核心关系" json:"strength"`
-
-	Status string `gorm:"column:status;type:varchar(50);not null;default:active;comment:关系状态。active表示当前有效，inactive表示已失效，hidden表示隐藏，deleted表示逻辑删除" json:"status"`
-
-	SourceChapterID *int64 `gorm:"column:source_chapter_id;comment:关系来源章节ID，表示这个关系最早或主要在哪个章节中出现" json:"source_chapter_id"`
-
-	CreatedBy string `gorm:"column:created_by;type:varchar(50);not null;default:manual;comment:创建来源。manual表示用户手动创建，ai表示AI生成，imported表示外部导入" json:"created_by"`
-
-	Metadata datatypes.JSON `gorm:"column:metadata;type:jsonb;not null;default:'{}';comment:扩展字段，用于存储前端关系图坐标、样式、AI分析依据、额外标签等非固定结构数据" json:"metadata"`
-
-	CreatedAt time.Time `gorm:"column:created_at;not null;default:now();comment:创建时间" json:"created_at"`
-
-	UpdatedAt time.Time `gorm:"column:updated_at;not null;default:now();comment:更新时间" json:"updated_at"`
+// CharacterRelationNode 保存角色在关系图画布上的节点布局，不承载角色本身的业务资料。
+type CharacterRelationNode struct {
+	ID          int64          `gorm:"column:id;primaryKey;autoIncrement" json:"id"`                             // 节点布局ID
+	NovelID     int64          `gorm:"column:novel_id;not null;index" json:"novelId"`                            // 小说ID
+	CharacterID int64          `gorm:"column:character_id;not null;index" json:"characterId"`                    // 角色ID
+	NodeType    string         `gorm:"column:node_type;type:varchar(50);not null;default:character" json:"type"` // Vue Flow 节点类型
+	PositionX   float64        `gorm:"column:position_x;not null;default:0" json:"positionX"`                    // 节点X坐标
+	PositionY   float64        `gorm:"column:position_y;not null;default:0" json:"positionY"`                    // 节点Y坐标
+	Width       *float64       `gorm:"column:width" json:"width"`                                                // 节点宽度
+	Height      *float64       `gorm:"column:height" json:"height"`                                              // 节点高度
+	Hidden      bool           `gorm:"column:hidden;not null;default:false" json:"hidden"`                       // 是否隐藏
+	Locked      bool           `gorm:"column:locked;not null;default:false" json:"locked"`                       // 是否锁定
+	Style       datatypes.JSON `gorm:"column:style;type:jsonb;not null;default:'{}'" json:"style"`               // 前端样式配置
+	ExtraData   datatypes.JSON `gorm:"column:extra_data;type:jsonb;not null;default:'{}'" json:"extraData"`      // 节点扩展数据
+	Status      int16          `gorm:"column:status;type:smallint;not null;default:1" json:"status"`             // 状态：1启用 2停用
+	CreatedAt   time.Time      `gorm:"column:created_at;not null;default:now()" json:"createdAt"`                // 创建时间
+	UpdatedAt   time.Time      `gorm:"column:updated_at;not null;default:now()" json:"updatedAt"`                // 更新时间
 }
 
-func (CharacterRelationship) TableName() string {
-	return "character_relationships"
+func (CharacterRelationNode) TableName() string {
+	return "character_relation_nodes"
+}
+
+// CharacterRelation 保存两个角色之间的业务关系，对应 Vue Flow 中的一条边。
+type CharacterRelation struct {
+	ID                int64          `gorm:"column:id;primaryKey;autoIncrement" json:"id"`                               // 关系ID
+	NovelID           int64          `gorm:"column:novel_id;not null;index" json:"novelId"`                              // 小说ID
+	SourceCharacterID int64          `gorm:"column:source_character_id;not null;index" json:"sourceCharacterId"`         // 起始角色ID
+	TargetCharacterID int64          `gorm:"column:target_character_id;not null;index" json:"targetCharacterId"`         // 目标角色ID
+	RelationType      string         `gorm:"column:relation_type;type:varchar(50);not null" json:"relationType"`         // 关系类型编码
+	RelationLabel     string         `gorm:"column:relation_label;type:varchar(100);not null" json:"relationLabel"`      // 关系展示名称
+	Description       string         `gorm:"column:description;type:text" json:"description"`                            // 关系说明
+	Direction         int16          `gorm:"column:direction;type:smallint;not null;default:2" json:"direction"`         // 关系方向：1单向 2双向或无向
+	EdgeType          string         `gorm:"column:edge_type;type:varchar(50);not null;default:default" json:"edgeType"` // Vue Flow 边类型
+	Animated          bool           `gorm:"column:animated;not null;default:false" json:"animated"`                     // 是否动画展示
+	SourceHandle      string         `gorm:"column:source_handle;type:varchar(50)" json:"sourceHandle"`                  // 起始连接桩ID
+	TargetHandle      string         `gorm:"column:target_handle;type:varchar(50)" json:"targetHandle"`                  // 目标连接桩ID
+	SortOrder         int            `gorm:"column:sort_order;not null;default:0" json:"sortOrder"`                      // 排序值
+	Style             datatypes.JSON `gorm:"column:style;type:jsonb;not null;default:'{}'" json:"style"`                 // 关系线样式配置
+	ExtraData         datatypes.JSON `gorm:"column:extra_data;type:jsonb;not null;default:'{}'" json:"extraData"`        // 关系扩展数据
+	Status            int16          `gorm:"column:status;type:smallint;not null;default:1" json:"status"`               // 状态：1启用 2停用
+	CreatedAt         time.Time      `gorm:"column:created_at;not null;default:now()" json:"createdAt"`                  // 创建时间
+	UpdatedAt         time.Time      `gorm:"column:updated_at;not null;default:now()" json:"updatedAt"`                  // 更新时间
+}
+
+func (CharacterRelation) TableName() string {
+	return "character_relations"
 }
