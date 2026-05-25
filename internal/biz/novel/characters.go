@@ -32,6 +32,7 @@ type CharacterUseCase struct {
 type CharacterRepo interface {
 	Create(ctx context.Context, character *data.Character) (*data.Character, error)
 	List(ctx context.Context, novelID int64, offset, limit int) ([]data.Character, int64, error)
+	ListDedupCharacters(ctx context.Context, novelID int64) ([]data.Character, error)
 	FindByID(ctx context.Context, novelID int64, characterID uint) (*data.Character, error)
 	Update(ctx context.Context, character *data.Character) (*data.Character, error)
 	Delete(ctx context.Context, novelID int64, characterID uint) error
@@ -149,8 +150,8 @@ func (uc *CharacterUseCase) GenerateCharacterCard(ctx context.Context, chapterID
 		return nil, nil
 	}
 
-	// 查询章节内容
-	chapter, err := uc.chapterData.FindByID(ctx, chapterID, 0)
+	// 先按章节 ID 查询章节内容和小说 ID，后续用小说 ID 过滤已存在的角色。
+	chapter, err := uc.chapterData.FindByID(ctx, 0, uint(chapterID))
 	if err != nil {
 		slog.ErrorContext(ctx, "查询章节失败", "err", err)
 		return nil, err
@@ -199,7 +200,60 @@ func (uc *CharacterUseCase) GenerateCharacterCard(ctx context.Context, chapterID
 	}
 	// 解析模型输出
 	cs := ai_tools.ToolOutput2CharacterCardTool(generate.ContentBlocks)
-	return cs, nil
+	filtered, err := uc.filterDuplicateCharacterCards(ctx, chapter.NovelID, cs)
+	if err != nil {
+		return nil, err
+	}
+
+	return filtered, nil
+}
+
+// filterDuplicateCharacterCards 按“角色名 + 性别”过滤数据库已有角色和本次 AI 输出中的重复角色。
+func (uc *CharacterUseCase) filterDuplicateCharacterCards(ctx context.Context, novelID int64, cards []*ai_tools.CharacterCardTool) ([]*ai_tools.CharacterCardTool, error) {
+	existingCharacters, err := uc.characterData.ListDedupCharacters(ctx, novelID)
+	if err != nil {
+		slog.ErrorContext(ctx, "查询已有角色失败", "err", err)
+		return nil, err
+	}
+
+	seen := make(map[string]struct{}, len(existingCharacters)+len(cards))
+	for _, character := range existingCharacters {
+		key := characterDedupKey(character.Name, character.Gender)
+		if key == "" {
+			continue
+		}
+		seen[key] = struct{}{}
+	}
+
+	filtered := make([]*ai_tools.CharacterCardTool, 0, len(cards))
+	for _, card := range cards {
+		if card == nil {
+			continue
+		}
+
+		key := characterDedupKey(card.Name, card.Gender)
+		if key == "" {
+			continue
+		}
+		if _, exists := seen[key]; exists {
+			continue
+		}
+
+		seen[key] = struct{}{}
+		filtered = append(filtered, card)
+	}
+
+	return filtered, nil
+}
+
+// characterDedupKey 生成角色去重键，只清理前后空白，不做同义名、繁简或大小写转换。
+func characterDedupKey(name, gender string) string {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return ""
+	}
+
+	return name + "\x00" + strings.TrimSpace(gender)
 }
 
 // ensureNovelExists 确认角色归属的小说存在，避免给不存在的小说维护角色资料。

@@ -57,6 +57,20 @@ func (d *CharacterData) List(ctx context.Context, novelID int64, offset, limit i
 	return characters, total, nil
 }
 
+// ListDedupCharacters 查询指定小说下用于去重的角色名称和性别，避免生成角色卡时加载完整角色详情。
+func (d *CharacterData) ListDedupCharacters(ctx context.Context, novelID int64) ([]Character, error) {
+	var characters []Character
+	err := d.db.WithContext(ctx).
+		Select("name, gender").
+		Where("novel_id = ?", novelID).
+		Find(&characters).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return characters, nil
+}
+
 // FindByID 查询指定小说下的角色详情，避免通过角色 ID 跨小说读取数据。
 func (d *CharacterData) FindByID(ctx context.Context, novelID int64, characterID uint) (*Character, error) {
 	var character Character

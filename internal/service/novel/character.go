@@ -276,7 +276,7 @@ func (service *CharacterService) Delete(c *gin.Context) {
 
 // GenerateCharacterCard 根据章节内容生成角色卡片
 // @Summary 根据章节内容生成角色卡片
-// @Description 使用数据库中当前启用的 AI 提供商和指定模型，分析章节正文并生成角色卡片列表
+// @Description 使用数据库中当前启用的 AI 提供商和指定模型，分析章节正文并生成角色卡片列表；返回前会按当前章节所属小说的已有角色做 name + gender 去重，并过滤本次 AI 输出中的重复角色
 // @Tags character
 // @Produce json
 // @Param id path int true "章节 ID"
