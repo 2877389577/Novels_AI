@@ -648,7 +648,7 @@ const docTemplate = `{
         },
         "/novels/chapters/{id}/characters/generate-card": {
             "get": {
-                "description": "使用数据库中当前启用的 AI 提供商和指定模型，分析章节正文并生成角色卡片列表",
+                "description": "使用数据库中当前启用的 AI 提供商和指定模型，分析章节正文并生成角色卡片列表；返回前会按当前章节所属小说的已有角色做 name + gender 去重，并过滤本次 AI 输出中的重复角色",
                 "produces": [
                     "application/json"
                 ],
@@ -2734,6 +2734,10 @@ const docTemplate = `{
                     "description": "小说元数据（标签信息）。",
                     "type": "object"
                 },
+                "novelOutline": {
+                    "description": "小说大纲，可为空。",
+                    "type": "string"
+                },
                 "title": {
                     "description": "书名，必填。",
                     "type": "string"
@@ -3060,6 +3064,10 @@ const docTemplate = `{
                 "metadata": {
                     "description": "小说元数据（标签信息）。",
                     "type": "object"
+                },
+                "novelOutline": {
+                    "description": "小说大纲，可为空。",
+                    "type": "string"
                 },
                 "title": {
                     "description": "书名，必填。",
@@ -3718,6 +3726,10 @@ const docTemplate = `{
                 "metadata": {
                     "description": "小说元数据（标签信息）",
                     "type": "object"
+                },
+                "novelOutline": {
+                    "description": "小说大纲",
+                    "type": "string"
                 },
                 "title": {
                     "description": "书名",

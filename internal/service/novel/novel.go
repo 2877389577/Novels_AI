@@ -37,6 +37,8 @@ type novelResponse struct {
 	Title string `json:"title"`
 	// 小说简介
 	Intro string `json:"intro"`
+	// 小说大纲
+	NovelOutline string `json:"novelOutline"`
 	// 小说作者
 	AuthorName string `json:"authorName"`
 	// 小说封面 URL
@@ -274,13 +276,14 @@ func toNovelResponse(novel *novelbiz.Novel) novelResponse {
 	}
 
 	return novelResponse{
-		ID:         novel.ID,
-		Title:      novel.Title,
-		Intro:      novel.Intro,
-		AuthorName: novel.AuthorName,
-		CoverURL:   novel.CoverURL,
-		WordCount:  novel.WordCount,
-		Metadata:   metadata,
-		CreatedAt:  novel.CreatedAt.Format("2006-01-02T15:04:05"),
+		ID:           novel.ID,
+		Title:        novel.Title,
+		Intro:        novel.Intro,
+		NovelOutline: novel.NovelOutline,
+		AuthorName:   novel.AuthorName,
+		CoverURL:     novel.CoverURL,
+		WordCount:    novel.WordCount,
+		Metadata:     metadata,
+		CreatedAt:    novel.CreatedAt.Format("2006-01-02T15:04:05"),
 	}
 }

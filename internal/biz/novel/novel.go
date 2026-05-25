@@ -45,11 +45,12 @@ func NewNovelUseCase(novelData NovelRepo) *NovelUseCase {
 // Create 整理小说默认值后创建记录。
 func (uc *NovelUseCase) Create(ctx context.Context, params dto.CreateNovelRequest) (*data.Novel, error) {
 	novel := &data.Novel{
-		Title:      params.Title,
-		Intro:      params.Intro,
-		AuthorName: params.AuthorName,
-		CoverURL:   params.CoverURL,
-		Metadata:   normalizeMetadata(params.Metadata.Value),
+		Title:        params.Title,
+		Intro:        params.Intro,
+		NovelOutline: params.NovelOutline,
+		AuthorName:   params.AuthorName,
+		CoverURL:     params.CoverURL,
+		Metadata:     normalizeMetadata(params.Metadata.Value),
 	}
 	create, err := uc.novelData.Create(ctx, novel)
 	if err != nil {
@@ -95,13 +96,14 @@ func (uc *NovelUseCase) Get(ctx context.Context, id uint) (*data.Novel, error) {
 // Update 按请求参数全量保存小说。
 func (uc *NovelUseCase) Update(ctx context.Context, params dto.UpdateNovelRequest) (*data.Novel, error) {
 	return uc.novelData.Update(ctx, &data.Novel{
-		Model:      gorm.Model{ID: params.ID},
-		Title:      params.Title,
-		Intro:      params.Intro,
-		AuthorName: params.AuthorName,
-		CoverURL:   params.CoverURL,
-		WordCount:  params.WordCount,
-		Metadata:   normalizeMetadata(params.Metadata.Value),
+		Model:        gorm.Model{ID: params.ID},
+		Title:        params.Title,
+		Intro:        params.Intro,
+		NovelOutline: params.NovelOutline,
+		AuthorName:   params.AuthorName,
+		CoverURL:     params.CoverURL,
+		WordCount:    params.WordCount,
+		Metadata:     normalizeMetadata(params.Metadata.Value),
 	})
 }
 

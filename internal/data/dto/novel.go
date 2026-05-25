@@ -6,6 +6,8 @@ type CreateNovelRequest struct {
 	Title string `json:"title" binding:"required" validatormsg:"书名不能为空"`
 	// 小说简介。
 	Intro string `json:"intro"`
+	// 小说大纲，可为空。
+	NovelOutline string `json:"novelOutline"`
 	// 小说作者。
 	AuthorName string `json:"authorName"`
 	// 小说封面 URL。
@@ -22,6 +24,8 @@ type UpdateNovelRequest struct {
 	Title string `json:"title" binding:"required" validatormsg:"书名不能为空"`
 	// 小说简介。
 	Intro string `json:"intro"`
+	// 小说大纲，可为空。
+	NovelOutline string `json:"novelOutline"`
 	// 小说作者。
 	AuthorName string `json:"authorName"`
 	// 小说封面 URL。
