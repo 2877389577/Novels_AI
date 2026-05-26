@@ -107,6 +107,41 @@ func (uc *NovelUseCase) Update(ctx context.Context, params dto.UpdateNovelReques
 	})
 }
 
+// SaveOutline 只更新小说大纲内容，其他小说字段沿用数据库中的当前值。
+func (uc *NovelUseCase) SaveOutline(ctx context.Context, params dto.SaveNovelOutlineRequest) (string, error) {
+	novel, err := uc.novelData.FindByID(ctx, uint(params.NovelID))
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", ErrNovelNotFound
+		}
+		slog.ErrorContext(ctx, "查询小说失败", "err", err)
+		return "", err
+	}
+
+	novel.NovelOutline = params.NovelOutline
+	updatedNovel, err := uc.novelData.Update(ctx, novel)
+	if err != nil {
+		slog.ErrorContext(ctx, "保存小说大纲失败", "err", err)
+		return "", err
+	}
+
+	return updatedNovel.NovelOutline, nil
+}
+
+// GetOutline 只返回小说大纲内容，用于编辑器单独加载大纲。
+func (uc *NovelUseCase) GetOutline(ctx context.Context, novelID uint) (string, error) {
+	novel, err := uc.novelData.FindByID(ctx, novelID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", ErrNovelNotFound
+		}
+		slog.ErrorContext(ctx, "查询小说大纲失败", "err", err)
+		return "", err
+	}
+
+	return novel.NovelOutline, nil
+}
+
 func (uc *NovelUseCase) Delete(ctx context.Context, id uint) error {
 	return uc.novelData.Delete(ctx, id)
 }

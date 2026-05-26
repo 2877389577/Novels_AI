@@ -385,6 +385,12 @@ definitions:
     required:
     - nodes
     type: object
+  dto.SaveNovelOutlineRequest:
+    properties:
+      novelOutline:
+        description: 小说大纲内容，可为空；传空字符串表示清空大纲。
+        type: string
+    type: object
   dto.UpdateAIProviderRequest:
     properties:
       apiKey:
@@ -1021,6 +1027,12 @@ definitions:
       total:
         type: integer
     type: object
+  novel.novelOutlineResponse:
+    properties:
+      novelOutline:
+        description: 小说大纲内容；为空字符串表示当前没有大纲。
+        type: string
+    type: object
   novel.novelResponse:
     properties:
       authorName:
@@ -1415,14 +1427,6 @@ paths:
                 data:
                   $ref: '#/definitions/novel.novelListResponse'
               type: object
-        "400":
-          description: 请求参数错误
-          schema:
-            $ref: '#/definitions/common.Response'
-        "401":
-          description: 未登录
-          schema:
-            $ref: '#/definitions/common.Response'
         "500":
           description: 系统错误
           schema:
@@ -1453,14 +1457,6 @@ paths:
                 data:
                   $ref: '#/definitions/novel.novelResponse'
               type: object
-        "400":
-          description: 请求参数错误
-          schema:
-            $ref: '#/definitions/common.Response'
-        "401":
-          description: 未登录
-          schema:
-            $ref: '#/definitions/common.Response'
         "500":
           description: 系统错误
           schema:
@@ -1482,18 +1478,6 @@ paths:
       responses:
         "200":
           description: OK
-          schema:
-            $ref: '#/definitions/common.Response'
-        "400":
-          description: 请求参数错误
-          schema:
-            $ref: '#/definitions/common.Response'
-        "401":
-          description: 未登录
-          schema:
-            $ref: '#/definitions/common.Response'
-        "404":
-          description: 小说不存在
           schema:
             $ref: '#/definitions/common.Response'
         "500":
@@ -1523,18 +1507,6 @@ paths:
                 data:
                   $ref: '#/definitions/novel.novelResponse'
               type: object
-        "400":
-          description: 请求参数错误
-          schema:
-            $ref: '#/definitions/common.Response'
-        "401":
-          description: 未登录
-          schema:
-            $ref: '#/definitions/common.Response'
-        "404":
-          description: 小说不存在
-          schema:
-            $ref: '#/definitions/common.Response'
         "500":
           description: 系统错误
           schema:
@@ -2388,6 +2360,69 @@ paths:
       summary: 优化小说正文
       tags:
       - novel-content
+  /novels/{id}/outline:
+    get:
+      description: 查询指定小说的大纲内容。该接口只返回 novelOutline 字段，不返回小说标题、简介、作者、封面、字数和元数据等详情字段。
+      parameters:
+      - description: 小说 ID，必须是正整数
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: code = 0 表示查询成功；data.novelOutline 为大纲内容，空字符串表示当前没有大纲
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/novel.novelOutlineResponse'
+              type: object
+        "500":
+          description: 系统错误
+          schema:
+            $ref: '#/definitions/common.SystemError'
+      summary: 查询小说大纲
+      tags:
+      - novel
+    post:
+      consumes:
+      - application/json
+      description: 给指定小说保存大纲内容。该接口同时承担新增、修改和删除大纲的能力：novelOutline 传入非空字符串表示保存或覆盖大纲，传入空字符串表示清空大纲；接口只更新小说大纲字段，不会修改小说标题、简介、作者、封面、字数和元数据。
+      parameters:
+      - description: 小说 ID，必须是正整数
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 小说大纲保存参数。novelOutline 为大纲内容，可为空；为空字符串表示清空大纲
+        in: body
+        name: outline
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SaveNovelOutlineRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: code = 0 表示保存成功；data.novelOutline 为保存后的大纲内容
+          schema:
+            allOf:
+            - $ref: '#/definitions/common.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/novel.novelOutlineResponse'
+              type: object
+        "500":
+          description: 系统错误
+          schema:
+            $ref: '#/definitions/common.SystemError'
+      summary: 保存小说大纲
+      tags:
+      - novel
   /novels/chapters/{id}/characters/generate-card:
     get:
       description: 使用数据库中当前启用的 AI 提供商和指定模型，分析章节正文并生成角色卡片列表；返回前会按当前章节所属小说的已有角色做 name
@@ -2448,18 +2483,6 @@ paths:
                 data:
                   $ref: '#/definitions/novel.novelResponse'
               type: object
-        "400":
-          description: 请求参数错误
-          schema:
-            $ref: '#/definitions/common.Response'
-        "401":
-          description: 未登录
-          schema:
-            $ref: '#/definitions/common.Response'
-        "404":
-          description: 小说不存在
-          schema:
-            $ref: '#/definitions/common.Response'
         "500":
           description: 系统错误
           schema:

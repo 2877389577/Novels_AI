@@ -36,6 +36,14 @@ type UpdateNovelRequest struct {
 	Metadata JSONField `json:"metadata" swaggertype:"object"`
 }
 
+// SaveNovelOutlineRequest 是小说大纲保存接口和业务层共用的请求参数。
+type SaveNovelOutlineRequest struct {
+	// 小说 ID 来自路径参数，不从请求体读取。
+	NovelID int64 `json:"-"`
+	// 小说大纲内容，可为空；传空字符串表示清空大纲。
+	NovelOutline string `json:"novelOutline"`
+}
+
 // CreateChapterRequest 是新增章节接口和业务层共用的请求参数。
 type CreateChapterRequest struct {
 	// 小说 ID 来自路径参数，不从请求体读取。

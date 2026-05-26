@@ -99,6 +99,8 @@ func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, upl
 	novelGroup.GET("/:id", novelService.Get)
 	novelGroup.PUT("/update", novelService.Update)
 	novelGroup.DELETE("/:id", novelService.Delete)
+	novelGroup.POST("/:id/outline", novelService.SaveOutline)
+	novelGroup.GET("/:id/outline", novelService.GetOutline)
 	novelGroup.POST("/:id/content/optimize", contentOptimizationService.Optimize)
 	novelGroup.POST("/:id/chapters", chapterService.Create)
 	novelGroup.GET("/:id/chapters", chapterService.List)

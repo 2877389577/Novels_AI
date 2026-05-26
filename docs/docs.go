@@ -563,18 +563,6 @@ const docTemplate = `{
                             ]
                         }
                     },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "未登录",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
                     "500": {
                         "description": "系统错误",
                         "schema": {
@@ -623,18 +611,6 @@ const docTemplate = `{
                                     }
                                 }
                             ]
-                        }
-                    },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "未登录",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
                         }
                     },
                     "500": {
@@ -746,24 +722,6 @@ const docTemplate = `{
                             ]
                         }
                     },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "未登录",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "小说不存在",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
                     "500": {
                         "description": "系统错误",
                         "schema": {
@@ -811,24 +769,6 @@ const docTemplate = `{
                             ]
                         }
                     },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "未登录",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "小说不存在",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
                     "500": {
                         "description": "系统错误",
                         "schema": {
@@ -858,24 +798,6 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "未登录",
-                        "schema": {
-                            "$ref": "#/definitions/common.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "小说不存在",
                         "schema": {
                             "$ref": "#/definitions/common.Response"
                         }
@@ -2215,6 +2137,110 @@ const docTemplate = `{
                 }
             }
         },
+        "/novels/{id}/outline": {
+            "get": {
+                "description": "查询指定小说的大纲内容。该接口只返回 novelOutline 字段，不返回小说标题、简介、作者、封面、字数和元数据等详情字段。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "novel"
+                ],
+                "summary": "查询小说大纲",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "小说 ID，必须是正整数",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "code = 0 表示查询成功；data.novelOutline 为大纲内容，空字符串表示当前没有大纲",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/novel.novelOutlineResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "系统错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.SystemError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "给指定小说保存大纲内容。该接口同时承担新增、修改和删除大纲的能力：novelOutline 传入非空字符串表示保存或覆盖大纲，传入空字符串表示清空大纲；接口只更新小说大纲字段，不会修改小说标题、简介、作者、封面、字数和元数据。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "novel"
+                ],
+                "summary": "保存小说大纲",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "小说 ID，必须是正整数",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "小说大纲保存参数。novelOutline 为大纲内容，可为空；为空字符串表示清空大纲",
+                        "name": "outline",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.SaveNovelOutlineRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "code = 0 表示保存成功；data.novelOutline 为保存后的大纲内容",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/novel.novelOutlineResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "系统错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.SystemError"
+                        }
+                    }
+                }
+            }
+        },
         "/upload": {
             "post": {
                 "description": "使用 S3 兼容对象存储上传文件，返回公开访问地址",
@@ -2814,6 +2840,15 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/dto.CharacterRelationNodeLayoutRequest"
                     }
+                }
+            }
+        },
+        "dto.SaveNovelOutlineRequest": {
+            "type": "object",
+            "properties": {
+                "novelOutline": {
+                    "description": "小说大纲内容，可为空；传空字符串表示清空大纲。",
+                    "type": "string"
                 }
             }
         },
@@ -3697,6 +3732,15 @@ const docTemplate = `{
                 },
                 "total": {
                     "type": "integer"
+                }
+            }
+        },
+        "novel.novelOutlineResponse": {
+            "type": "object",
+            "properties": {
+                "novelOutline": {
+                    "description": "小说大纲内容；为空字符串表示当前没有大纲。",
+                    "type": "string"
                 }
             }
         },
