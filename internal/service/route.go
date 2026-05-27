@@ -7,6 +7,7 @@ import (
 	novelbiz "Novels_AI/backend/internal/biz/novel"
 	uploadbiz "Novels_AI/backend/internal/biz/upload"
 	"Novels_AI/backend/internal/data"
+	"Novels_AI/backend/internal/event"
 	"Novels_AI/backend/internal/middleware"
 	aiproviderservice "Novels_AI/backend/internal/service/aiprovider"
 	"Novels_AI/backend/internal/service/login"
@@ -61,8 +62,8 @@ func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, upl
 	novelService := novelservice.NewNovelService(novelUseCase)
 	// 章节相关接口
 	chapterData := data.NewChapterData(db)
-	chapterUseCase := novelbiz.NewChapterUseCase(novelData, chapterData)
-	chapterService := novelservice.NewChapterService(chapterUseCase)
+	chapterPlotAnalysisData := data.NewChapterPlotAnalysisData(db)
+	eventBus := event.NewBus()
 
 	// ai 提供商相关接口
 	aiProviderData := data.NewAIProviderData(db)
@@ -70,6 +71,10 @@ func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, upl
 	aiProviderService := aiproviderservice.NewAIProviderService(aiProviderUseCase)
 	contentOptimizationUseCase := novelbiz.NewContentOptimizationUseCase(novelData, aiProviderData, apiKeyCipher)
 	contentOptimizationService := novelservice.NewContentOptimizationService(contentOptimizationUseCase)
+	chapterPlotAnalysisUseCase := novelbiz.NewChapterPlotAnalysisUseCase(chapterPlotAnalysisData, aiProviderData, apiKeyCipher)
+	novelbiz.RegisterChapterPlotAnalysisEventHandlers(eventBus, chapterPlotAnalysisUseCase)
+	chapterUseCase := novelbiz.NewChapterUseCase(novelData, chapterData, eventBus)
+	chapterService := novelservice.NewChapterService(chapterUseCase, chapterPlotAnalysisUseCase)
 
 	// 角色相关接口
 	characterData := data.NewCharacterData(db)
@@ -104,6 +109,7 @@ func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, upl
 	novelGroup.POST("/:id/content/optimize", contentOptimizationService.Optimize)
 	novelGroup.POST("/:id/chapters", chapterService.Create)
 	novelGroup.GET("/:id/chapters", chapterService.List)
+	novelGroup.GET("/:id/chapters/:chapterId/plot-analysis", chapterService.GetPlotAnalysis)
 	novelGroup.GET("/:id/chapters/:chapterId", chapterService.Get)
 	novelGroup.PUT("/:id/chapters/:chapterId", chapterService.Update)
 	novelGroup.DELETE("/:id/chapters/:chapterId", chapterService.Delete)

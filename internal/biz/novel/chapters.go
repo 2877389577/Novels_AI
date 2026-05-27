@@ -7,6 +7,7 @@ import (
 
 	"Novels_AI/backend/internal/data"
 	"Novels_AI/backend/internal/data/dto"
+	"Novels_AI/backend/internal/event"
 	"Novels_AI/backend/internal/pkg/common"
 
 	"gorm.io/gorm"
@@ -17,6 +18,7 @@ type Chapter = data.Chapter
 type ChapterUseCase struct {
 	novelData   NovelRepo
 	chapterData ChapterRepo
+	eventBus    *event.Bus
 }
 
 type ChapterRepo interface {
@@ -36,10 +38,11 @@ type ListChapterResult struct {
 	PageSize int
 }
 
-func NewChapterUseCase(novelData NovelRepo, chapterData ChapterRepo) *ChapterUseCase {
+func NewChapterUseCase(novelData NovelRepo, chapterData ChapterRepo, eventBus *event.Bus) *ChapterUseCase {
 	return &ChapterUseCase{
 		novelData:   novelData,
 		chapterData: chapterData,
+		eventBus:    eventBus,
 	}
 }
 
@@ -65,7 +68,14 @@ func (uc *ChapterUseCase) CreateChapter(ctx context.Context, params dto.CreateCh
 		Content:   params.Content,
 		WordCount: params.WordCount,
 	}
-	return uc.chapterData.Create(ctx, chapter, int64(params.WordCount))
+
+	savedChapter, err := uc.chapterData.Create(ctx, chapter, int64(params.WordCount))
+	if err != nil {
+		return nil, err
+	}
+
+	uc.publishChapterSaved(ctx, savedChapter)
+	return savedChapter, nil
 }
 
 // NextChapterNo 返回单本小说的下一章编号，即当前最大章节编号加一。
@@ -134,7 +144,13 @@ func (uc *ChapterUseCase) UpdateChapter(ctx context.Context, params dto.UpdateCh
 	chapter.WordCount = params.WordCount
 	wordDelta := int64(params.WordCount - oldChapter.WordCount)
 
-	return uc.chapterData.Update(ctx, &chapter, wordDelta)
+	savedChapter, err := uc.chapterData.Update(ctx, &chapter, wordDelta)
+	if err != nil {
+		return nil, err
+	}
+
+	uc.publishChapterSaved(ctx, savedChapter)
+	return savedChapter, nil
 }
 
 // DeleteChapter 软删除章节，并按章节原字数扣减小说总字数。
@@ -158,4 +174,30 @@ func (uc *ChapterUseCase) ensureNovelExists(ctx context.Context, novelID int64) 
 
 	slog.ErrorContext(ctx, "查询小说失败", "err", err)
 	return err
+}
+
+func (uc *ChapterUseCase) publishChapterSaved(ctx context.Context, chapter *data.Chapter) {
+	if chapter == nil {
+		return
+	}
+
+	if uc.eventBus == nil {
+		slog.WarnContext(ctx, "章节保存事件总线未初始化，跳过章节剧情总结", "novelId", chapter.NovelID, "chapterId", chapter.ID)
+		return
+	}
+
+	payload := ChapterSavedEvent{
+		NovelID:   chapter.NovelID,
+		ChapterID: chapter.ID,
+		Title:     chapter.Title,
+		Content:   chapter.Content,
+	}
+
+	// 章节剧情总结由异步订阅者处理；这里先记录事件是否确实发布出去，便于排查订阅链路。
+	slog.InfoContext(ctx, "发布章节保存事件", "eventName", chapterSavedEventName, "novelId", payload.NovelID, "chapterId", payload.ChapterID)
+
+	err := uc.eventBus.Publish(ctx, event.New(chapterSavedEventName, payload))
+	if err != nil {
+		slog.ErrorContext(ctx, "处理章节保存事件失败", "eventName", chapterSavedEventName, "novelId", payload.NovelID, "chapterId", payload.ChapterID, "err", err)
+	}
 }

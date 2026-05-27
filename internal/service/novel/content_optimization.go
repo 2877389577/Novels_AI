@@ -29,14 +29,14 @@ func NewContentOptimizationService(useCase ContentOptimizationUseCase) *ContentO
 
 // Optimize 优化小说正文
 // @Summary 优化小说正文
-// @Description 对用户在编辑器中选中的小说段落进行 AI 文笔润色。请求体只包含用户选中的原文和优化方向；优化方向可为空，表示按系统默认提示词做通用润色。该接口只返回优化结果，不会修改章节正文或写入数据库。AI 必须通过 novel_content_optimize_tool 返回结构化字段：optimizedContent 为优化后的正文，approved 表示是否同意优化，rejectReason 表示拒绝原因。
+// @Description 对用户在编辑器中选中的小说段落进行 AI 优化。请求体只包含用户选中的原文和优化方向；优化方向可为空，表示默认做通用文笔润色。优化方向不为空时，顶层 Agent 会先分析用户意图，再自动选择文笔润色或扩写子 Agent。该接口只返回优化结果，不会修改章节正文或写入数据库。AI 必须通过 novel_content_optimize_tool 返回结构化字段：optimizedContent 为优化或扩写后的正文，approved 表示是否同意处理，rejectReason 表示拒绝原因。
 // @Tags novel-content
 // @Accept json
 // @Produce json
 // @Param id path int true "小说 ID，必须是正整数，用于确认本次优化归属的小说存在"
 // @Param modelName query string true "大模型名称，例如 doubao-xxx；后端会使用当前启用 AI 提供商的 BaseURL 和 API Key 初始化该模型"
-// @Param content body dto.OptimizeNovelContentRequest true "正文优化请求参数。selectedContent 为用户选中的小说原文段落，必填；optimizeDirection 为用户输入的优化方向，可为空"
-// @Success 200 {object} common.Response{data=ai_tools.NovelContentOptimizeTool} "code = 0 表示请求成功；data.optimizedContent 为优化后的正文；data.approved 为是否同意优化；data.rejectReason 为拒绝理由"
+// @Param content body dto.OptimizeNovelContentRequest true "正文优化请求参数。selectedContent 为用户选中的小说原文段落，必填；optimizeDirection 为用户输入的优化方向，可为空；为空时默认文笔润色，包含扩写意图时自动走扩写"
+// @Success 200 {object} common.Response{data=ai_tools.NovelContentOptimizeTool} "code = 0 表示请求成功；data.optimizedContent 为优化或扩写后的正文；data.approved 为是否同意处理；data.rejectReason 为拒绝理由"
 // @Failure 400 {object} common.Response "请求参数错误，例如小说 ID 不是正整数、modelName 为空或 selectedContent 为空"
 // @Failure 500 {object} common.SystemError "系统错误，例如读取提示词失败、API Key 解密失败或上游模型调用失败"
 // @Router /novels/{id}/content/optimize [post]

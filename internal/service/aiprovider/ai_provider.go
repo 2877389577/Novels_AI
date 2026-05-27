@@ -49,6 +49,8 @@ type aiProviderResponse struct {
 	ConfigJSON json.RawMessage `json:"configJson" swaggertype:"object"`
 	// 支持的模型列表
 	Models []string `json:"models"`
+	// 默认模型
+	DefaultModel string `json:"defaultModel"`
 	// 最大上下文长度
 	MaxContextLength int64 `json:"maxContextLength"`
 	// 最大输入令牌数
@@ -382,6 +384,7 @@ func toAIProviderListItemResponse(provider *aiproviderbiz.AIProvider) aiProvider
 		IsEnabled:        provider.IsEnabled,
 		ConfigJSON:       configJSON,
 		Models:           []string(provider.Models),
+		DefaultModel:     provider.DefaultModel,
 		MaxContextLength: provider.MaxContextLength,
 		MaxInputTokens:   provider.MaxInputTokens,
 		MaxOutputTokens:  provider.MaxOutputTokens,

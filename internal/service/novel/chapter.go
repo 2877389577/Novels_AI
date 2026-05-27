@@ -11,10 +11,12 @@ import (
 	"Novels_AI/backend/internal/pkg/common"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/datatypes"
 )
 
 type ChapterService struct {
-	useCase ChapterUseCase
+	useCase             ChapterUseCase
+	plotAnalysisUseCase ChapterPlotAnalysisUseCase
 }
 
 type ChapterUseCase interface {
@@ -24,6 +26,10 @@ type ChapterUseCase interface {
 	GetChapter(ctx context.Context, novelID int64, chapterID uint) (*novelbiz.Chapter, error)
 	UpdateChapter(ctx context.Context, params dto.UpdateChapterRequest) (*novelbiz.Chapter, error)
 	DeleteChapter(ctx context.Context, novelID int64, chapterID uint) error
+}
+
+type ChapterPlotAnalysisUseCase interface {
+	GetChapterPlotAnalysis(ctx context.Context, novelID int64, chapterID uint) (*novelbiz.ChapterPlotAnalysis, error)
 }
 
 type chapterResponse struct {
@@ -73,13 +79,40 @@ type nextChapterNoResponse struct {
 	ChapterNo int `json:"chapterNo"`
 }
 
-func NewChapterService(useCase ChapterUseCase) *ChapterService {
-	return &ChapterService{useCase: useCase}
+type chapterPlotAnalysisResponse struct {
+	// 剧情总结 ID
+	ID int64 `json:"id"`
+	// 小说 ID
+	NovelID int64 `json:"novelId"`
+	// 章节 ID
+	ChapterID uint `json:"chapterId"`
+	// 本章剧情概述
+	Summary string `json:"summary"`
+	// 本章关键事件列表
+	KeyEvents datatypes.JSON `json:"key_events" swaggertype:"array,string"`
+	// 本章主要涉及角色列表
+	CharactersInvolved datatypes.JSON `json:"characters_involved" swaggertype:"array,string"`
+	// 本章人物关系变化列表
+	RelationshipChanges datatypes.JSON `json:"relationship_changes" swaggertype:"array,object"`
+	// 本章关键事件分析列表
+	EventAnalysis datatypes.JSON `json:"event_analysis" swaggertype:"array,string"`
+	// 本章伏笔列表
+	Foreshadowing datatypes.JSON `json:"foreshadowing" swaggertype:"array,string"`
+	// 本章未解决线索列表
+	UnresolvedThreads datatypes.JSON `json:"unresolved_threads" swaggertype:"array,string"`
+	// 创建时间
+	CreatedAt string `json:"createdAt"`
+	// 更新时间
+	UpdatedAt string `json:"updatedAt"`
+}
+
+func NewChapterService(useCase ChapterUseCase, plotAnalysisUseCase ChapterPlotAnalysisUseCase) *ChapterService {
+	return &ChapterService{useCase: useCase, plotAnalysisUseCase: plotAnalysisUseCase}
 }
 
 // Create 新增章节
 // @Summary 新增章节
-// @Description 给指定小说新增章节，并同步增加小说总字数
+// @Description 给指定小说新增章节，保存成功后会通过事件触发章节剧情总结，并同步增加小说总字数；剧情总结不在本接口返回
 // @Tags chapter
 // @Accept json
 // @Produce json
@@ -218,7 +251,7 @@ func (service *ChapterService) List(c *gin.Context) {
 
 // Get 查询章节详情
 // @Summary 查询章节详情
-// @Description 查询指定小说下的章节详情，返回完整正文
+// @Description 查询指定小说下的章节详情，返回完整正文；章节剧情总结请调用独立查询接口
 // @Tags chapter
 // @Produce json
 // @Param id path int true "小说 ID"
@@ -260,9 +293,44 @@ func (service *ChapterService) Get(c *gin.Context) {
 	})
 }
 
+// GetPlotAnalysis 查询章节剧情总结
+// @Summary 查询章节剧情总结
+// @Description 查询指定小说章节已经持久化的 AI 剧情总结。章节保存或修改后会通过事件触发总结生成；如果 AI 尚未成功生成总结，本接口返回章节剧情总结不存在
+// @Tags chapter
+// @Produce json
+// @Param id path int true "小说 ID"
+// @Param chapterId path int true "章节 ID"
+// @Success 200 {object} common.Response{data=chapterPlotAnalysisResponse} "code=0 表示查询成功；code=3008 表示 AI 尚未成功生成总结"
+// @Failure 500 {object} common.SystemError "系统错误"
+// @Router /novels/{id}/chapters/{chapterId}/plot-analysis [get]
+func (service *ChapterService) GetPlotAnalysis(c *gin.Context) {
+	novelID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || novelID <= 0 {
+		_ = c.Error(common.InvalidRequest)
+		return
+	}
+	chapterID, err := strconv.ParseUint(c.Param("chapterId"), 10, 64)
+	if err != nil || chapterID == 0 {
+		_ = c.Error(common.InvalidRequest)
+		return
+	}
+
+	analysis, err := service.plotAnalysisUseCase.GetChapterPlotAnalysis(c.Request.Context(), novelID, uint(chapterID))
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, &common.Response{
+		Code: 0,
+		Msg:  "成功",
+		Data: toChapterPlotAnalysisResponse(analysis),
+	})
+}
+
 // Update 修改章节
 // @Summary 修改章节
-// @Description 全量更新章节，并按章节字数差值同步小说总字数
+// @Description 全量更新章节，保存成功后会通过事件触发章节剧情总结，并按章节字数差值同步小说总字数；剧情总结不在本接口返回
 // @Tags chapter
 // @Accept json
 // @Produce json
@@ -368,5 +436,22 @@ func toChapterListItemResponse(chapter *novelbiz.Chapter) chapterListItemRespons
 		WordCount: chapter.WordCount,
 		CreatedAt: chapter.CreatedAt.Format("2006-01-02T15:04:05"),
 		UpdatedAt: chapter.UpdatedAt.Format("2006-01-02T15:04:05"),
+	}
+}
+
+func toChapterPlotAnalysisResponse(analysis *novelbiz.ChapterPlotAnalysis) chapterPlotAnalysisResponse {
+	return chapterPlotAnalysisResponse{
+		ID:                  analysis.ID,
+		NovelID:             analysis.NovelID,
+		ChapterID:           analysis.ChapterID,
+		Summary:             analysis.Summary,
+		KeyEvents:           analysis.KeyEvents,
+		CharactersInvolved:  analysis.CharactersInvolved,
+		RelationshipChanges: analysis.RelationshipChanges,
+		EventAnalysis:       analysis.EventAnalysis,
+		Foreshadowing:       analysis.Foreshadowing,
+		UnresolvedThreads:   analysis.UnresolvedThreads,
+		CreatedAt:           analysis.CreatedAt.Format("2006-01-02T15:04:05"),
+		UpdatedAt:           analysis.UpdatedAt.Format("2006-01-02T15:04:05"),
 	}
 }

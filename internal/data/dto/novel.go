@@ -44,7 +44,7 @@ type SaveNovelOutlineRequest struct {
 	NovelOutline string `json:"novelOutline"`
 }
 
-// CreateChapterRequest 是新增章节接口和业务层共用的请求参数。
+// CreateChapterRequest 是新增章节接口和业务层共用的请求参数；章节剧情总结会在章节保存成功后通过事件触发。
 type CreateChapterRequest struct {
 	// 小说 ID 来自路径参数，不从请求体读取。
 	NovelID int64 `json:"-"`
@@ -58,7 +58,7 @@ type CreateChapterRequest struct {
 	WordCount int `json:"wordCount" binding:"gte=0" validatormsg:"章节字数不能小于0"`
 }
 
-// UpdateChapterRequest 是全量更新章节接口和业务层共用的请求参数。
+// UpdateChapterRequest 是全量更新章节接口和业务层共用的请求参数；章节剧情总结会在章节保存成功后通过事件重新触发。
 type UpdateChapterRequest struct {
 	// 小说 ID 来自路径参数，不从请求体读取。
 	NovelID int64 `json:"-"`
@@ -82,7 +82,7 @@ type OptimizeNovelContentRequest struct {
 	ModelName string `json:"-"`
 	// 用户在编辑器中选中的小说原文段落，必填。
 	SelectedContent string `json:"selectedContent" binding:"required" validatormsg:"优化内容不能为空"`
-	// 用户输入的优化方向，可为空；为空时业务层按系统提示词做通用文笔优化。
+	// 用户输入的优化方向，可为空；为空时业务层默认做文笔优化，非空时交由顶层 Agent 判断润色或扩写。
 	OptimizeDirection string `json:"optimizeDirection"`
 }
 

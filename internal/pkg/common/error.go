@@ -93,6 +93,12 @@ var (
 	ChapterWordCountInvalid = NewHTTPError(http.StatusBadRequest, 3003, "章节字数不能小于0")
 	ChapterNoExists         = NewHTTPError(http.StatusConflict, 3004, "章节编号已存在")
 	ChapterNotFound         = NewHTTPError(http.StatusNotFound, 3005, "章节不存在")
+	// ChapterPlotAnalysisModelNotFound 表示当前启用的 AI 提供商没有配置可用于章节剧情解析的模型。
+	ChapterPlotAnalysisModelNotFound = NewHTTPError(http.StatusBadGateway, 3006, "未配置章节剧情解析模型")
+	// ChapterPlotAnalysisNoResult 表示模型没有按要求调用章节剧情解析 tool 返回结构化结果。
+	ChapterPlotAnalysisNoResult = NewHTTPError(http.StatusBadGateway, 3007, "AI未返回章节剧情解析结果")
+	// ChapterPlotAnalysisNotFound 表示指定章节还没有生成可查询的剧情总结；异步生成未完成是正常业务状态，HTTP 层返回 200。
+	ChapterPlotAnalysisNotFound = NewHTTPError(http.StatusOK, 3008, "章节剧情总结不存在")
 )
 
 var (
@@ -100,6 +106,8 @@ var (
 	NovelContentOptimizeNoResult = NewHTTPError(http.StatusBadGateway, 7000, "AI未返回内容优化结果")
 	// NovelContentOptimizePromptReadFailed 表示服务端无法读取正文优化系统提示词文件。
 	NovelContentOptimizePromptReadFailed = NewHTTPError(http.StatusInternalServerError, 7001, "读取小说内容优化提示词失败")
+	// NovelContentOptimizeRouteNoResult 表示顶层 Agent 没有按要求返回子 Agent 分流结果。
+	NovelContentOptimizeRouteNoResult = NewHTTPError(http.StatusBadGateway, 7002, "AI未返回内容优化任务分析结果")
 )
 
 var (

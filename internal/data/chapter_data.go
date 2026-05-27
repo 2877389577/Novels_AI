@@ -65,16 +65,7 @@ func (d *ChapterData) List(ctx context.Context, novelID int64, offset, limit int
 // FindByID 查询指定小说下的章节，避免跨小说 ID 误读其他小说的章节。
 func (d *ChapterData) FindByID(ctx context.Context, novelID int64, chapterID uint) (*Chapter, error) {
 	var chapter Chapter
-	db := d.db.WithContext(ctx)
-
-	// 这里不需要检查小说ID，现在懒得改，就兼容一下。
-	if novelID == 0 {
-		db.Where("id = ? ", chapterID)
-	} else {
-		db.Where("id = ? AND novel_id = ?", chapterID, novelID)
-	}
-
-	err := db.First(&chapter).Error
+	err := d.chapterFindByIDQuery(ctx, novelID, chapterID).First(&chapter).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, common.ChapterNotFound
@@ -83,6 +74,16 @@ func (d *ChapterData) FindByID(ctx context.Context, novelID int64, chapterID uin
 	}
 
 	return &chapter, nil
+}
+
+// chapterFindByIDQuery 统一构造章节主键查询，保证保存、修改和 AI 总结事件拿到同一个章节身份。
+func (d *ChapterData) chapterFindByIDQuery(ctx context.Context, novelID int64, chapterID uint) *gorm.DB {
+	query := d.db.WithContext(ctx)
+	if novelID == 0 {
+		return query.Where("id = ?", chapterID)
+	}
+
+	return query.Where("id = ? AND novel_id = ?", chapterID, novelID)
 }
 
 // ChapterNoExists 检查同一本小说下章节编号是否已存在，excludeID 用于更新时排除当前章节。

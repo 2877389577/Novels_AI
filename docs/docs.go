@@ -888,7 +888,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "给指定小说新增章节，并同步增加小说总字数",
+                "description": "给指定小说新增章节，保存成功后会通过事件触发章节剧情总结，并同步增加小说总字数；剧情总结不在本接口返回",
                 "consumes": [
                     "application/json"
                 ],
@@ -1036,7 +1036,7 @@ const docTemplate = `{
         },
         "/novels/{id}/chapters/{chapterId}": {
             "get": {
-                "description": "查询指定小说下的章节详情，返回完整正文",
+                "description": "查询指定小说下的章节详情，返回完整正文；章节剧情总结请调用独立查询接口",
                 "produces": [
                     "application/json"
                 ],
@@ -1106,7 +1106,7 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "全量更新章节，并按章节字数差值同步小说总字数",
+                "description": "全量更新章节，保存成功后会通过事件触发章节剧情总结，并按章节字数差值同步小说总字数；剧情总结不在本接口返回",
                 "consumes": [
                     "application/json"
                 ],
@@ -1241,6 +1241,60 @@ const docTemplate = `{
                         "description": "章节不存在",
                         "schema": {
                             "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "系统错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.SystemError"
+                        }
+                    }
+                }
+            }
+        },
+        "/novels/{id}/chapters/{chapterId}/plot-analysis": {
+            "get": {
+                "description": "查询指定小说章节已经持久化的 AI 剧情总结。章节保存或修改后会通过事件触发总结生成；如果 AI 尚未成功生成总结，本接口返回章节剧情总结不存在",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chapter"
+                ],
+                "summary": "查询章节剧情总结",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "小说 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "章节 ID",
+                        "name": "chapterId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "code=0 表示查询成功；code=3008 表示 AI 尚未成功生成总结",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/novel.chapterPlotAnalysisResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
@@ -2067,7 +2121,7 @@ const docTemplate = `{
         },
         "/novels/{id}/content/optimize": {
             "post": {
-                "description": "对用户在编辑器中选中的小说段落进行 AI 文笔润色。请求体只包含用户选中的原文和优化方向；优化方向可为空，表示按系统默认提示词做通用润色。该接口只返回优化结果，不会修改章节正文或写入数据库。AI 必须通过 novel_content_optimize_tool 返回结构化字段：optimizedContent 为优化后的正文，approved 表示是否同意优化，rejectReason 表示拒绝原因。",
+                "description": "对用户在编辑器中选中的小说段落进行 AI 优化。请求体只包含用户选中的原文和优化方向；优化方向可为空，表示默认做通用文笔润色。优化方向不为空时，顶层 Agent 会先分析用户意图，再自动选择文笔润色或扩写子 Agent。该接口只返回优化结果，不会修改章节正文或写入数据库。AI 必须通过 novel_content_optimize_tool 返回结构化字段：optimizedContent 为优化或扩写后的正文，approved 表示是否同意处理，rejectReason 表示拒绝原因。",
                 "consumes": [
                     "application/json"
                 ],
@@ -2094,7 +2148,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "正文优化请求参数。selectedContent 为用户选中的小说原文段落，必填；optimizeDirection 为用户输入的优化方向，可为空",
+                        "description": "正文优化请求参数。selectedContent 为用户选中的小说原文段落，必填；optimizeDirection 为用户输入的优化方向，可为空；为空时默认文笔润色，包含扩写意图时自动走扩写",
                         "name": "content",
                         "in": "body",
                         "required": true,
@@ -2105,7 +2159,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "code = 0 表示请求成功；data.optimizedContent 为优化后的正文；data.approved 为是否同意优化；data.rejectReason 为拒绝理由",
+                        "description": "code = 0 表示请求成功；data.optimizedContent 为优化或扩写后的正文；data.approved 为是否同意处理；data.rejectReason 为拒绝理由",
                         "schema": {
                             "allOf": [
                                 {
@@ -2393,6 +2447,10 @@ const docTemplate = `{
                     "description": "创建时间",
                     "type": "string"
                 },
+                "defaultModel": {
+                    "description": "默认模型",
+                    "type": "string"
+                },
                 "id": {
                     "description": "ai 提供商 ID",
                     "type": "integer"
@@ -2524,6 +2582,7 @@ const docTemplate = `{
             "required": [
                 "apiKey",
                 "baseUrl",
+                "defaultModel",
                 "name",
                 "providerType"
             ],
@@ -2539,6 +2598,10 @@ const docTemplate = `{
                 "configJson": {
                     "description": "ai 提供商额外配置。",
                     "type": "object"
+                },
+                "defaultModel": {
+                    "description": "默认模型，必填；章节剧情总结等自动 AI 任务会使用该模型。",
+                    "type": "string"
                 },
                 "isEnabled": {
                     "description": "是否启用；不传时由业务层默认启用。",
@@ -2789,7 +2852,7 @@ const docTemplate = `{
             ],
             "properties": {
                 "optimizeDirection": {
-                    "description": "用户输入的优化方向，可为空；为空时业务层按系统提示词做通用文笔优化。",
+                    "description": "用户输入的优化方向，可为空；为空时业务层默认做文笔优化，非空时交由顶层 Agent 判断润色或扩写。",
                     "type": "string"
                 },
                 "selectedContent": {
@@ -2857,6 +2920,7 @@ const docTemplate = `{
             "required": [
                 "apiKey",
                 "baseUrl",
+                "defaultModel",
                 "name",
                 "providerType"
             ],
@@ -2872,6 +2936,10 @@ const docTemplate = `{
                 "configJson": {
                     "description": "ai 提供商额外配置。",
                     "type": "object"
+                },
+                "defaultModel": {
+                    "description": "默认模型，必填；章节剧情总结等自动 AI 任务会使用该模型。",
+                    "type": "string"
                 },
                 "isEnabled": {
                     "description": "是否启用。",
@@ -3165,6 +3233,77 @@ const docTemplate = `{
                 },
                 "total": {
                     "type": "integer"
+                }
+            }
+        },
+        "novel.chapterPlotAnalysisResponse": {
+            "type": "object",
+            "properties": {
+                "chapterId": {
+                    "description": "章节 ID",
+                    "type": "integer"
+                },
+                "characters_involved": {
+                    "description": "本章主要涉及角色列表",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "createdAt": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "event_analysis": {
+                    "description": "本章关键事件分析列表",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "foreshadowing": {
+                    "description": "本章伏笔列表",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "id": {
+                    "description": "剧情总结 ID",
+                    "type": "integer"
+                },
+                "key_events": {
+                    "description": "本章关键事件列表",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "novelId": {
+                    "description": "小说 ID",
+                    "type": "integer"
+                },
+                "relationship_changes": {
+                    "description": "本章人物关系变化列表",
+                    "type": "array",
+                    "items": {
+                        "type": "object"
+                    }
+                },
+                "summary": {
+                    "description": "本章剧情概述",
+                    "type": "string"
+                },
+                "unresolved_threads": {
+                    "description": "本章未解决线索列表",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "updatedAt": {
+                    "description": "更新时间",
+                    "type": "string"
                 }
             }
         },
