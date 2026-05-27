@@ -24,5 +24,9 @@ func NewDB(config PostgresConfig) (*gorm.DB, error) {
 	}
 	slog.Info("connect postgres database success")
 
+	if err := AutoMigrateDB(db); err != nil {
+		return nil, err
+	}
+
 	return db, nil
 }
