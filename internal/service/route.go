@@ -1,6 +1,9 @@
 package service
 
 import (
+	"net/http"
+	"strings"
+
 	docs "Novels_AI/backend/docs"
 	aiproviderbiz "Novels_AI/backend/internal/biz/aiprovider"
 	aitaskconfigbiz "Novels_AI/backend/internal/biz/aitaskconfig"
@@ -11,12 +14,14 @@ import (
 	"Novels_AI/backend/internal/data"
 	"Novels_AI/backend/internal/event"
 	"Novels_AI/backend/internal/middleware"
+	"Novels_AI/backend/internal/pkg/common"
 	aiproviderservice "Novels_AI/backend/internal/service/aiprovider"
 	aitaskconfigservice "Novels_AI/backend/internal/service/aitaskconfig"
 	imageproviderservice "Novels_AI/backend/internal/service/imageprovider"
 	"Novels_AI/backend/internal/service/login"
 	novelservice "Novels_AI/backend/internal/service/novel"
 	uploadservice "Novels_AI/backend/internal/service/upload"
+	"Novels_AI/backend/internal/web"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -45,6 +50,18 @@ import (
 // @externalDocs.url          https://swagger.io/resources/open-api/
 func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, uploadConfig data.S3UploadConfig, apiKeyCipher aiproviderbiz.APIKeyCipher, db *gorm.DB) {
 	docs.SwaggerInfo.BasePath = "/api/v1"
+
+	// 前端静态资源：注册在全局中间件（含 RateLimiter）之前。
+	// RateLimiter 是全局共享配额（默认 60/min），一次首屏会加载数十个 /assets 资源，
+	// 若计入限流会瞬间触发 429。静态资源为公开内容，无需会话与限流保护。
+	engine.StaticFS("/assets", web.AssetsFS())
+	engine.StaticFileFS("/favicon.ico", "favicon.ico", web.DistFS())
+	// 根路径直接写回 index.html 字节，不用 StaticFileFS("/", "index.html")：
+	// http.FileServer 会把 /index.html 301 重定向到 ./，与根路由 "/" 形成无限重定向（ERR_TOO_MANY_REDIRECTS）。
+	serveIndex := func(c *gin.Context) {
+		c.Data(http.StatusOK, "text/html; charset=utf-8", web.IndexHTML())
+	}
+	engine.GET("/", serveIndex)
 
 	// 中间件
 	engine.Use(middleware.RequestID())
@@ -178,4 +195,15 @@ func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, upl
 
 	// 上传接口同样需要登录会话，避免匿名用户写入对象存储。
 	group.POST("/upload", middleware.SessionAuth(), uploadService.Upload)
+
+	// SPA history fallback：未匹配的路由返回 index.html，交给前端路由处理（如刷新 /novels/123）。
+	// 但 /api/ 与 /swagger/ 前缀的未匹配请求仍返回统一 JSON 404，避免前端 fetch 拿到一段 HTML。
+	engine.NoRoute(func(c *gin.Context) {
+		p := c.Request.URL.Path
+		if strings.HasPrefix(p, "/api/") || strings.HasPrefix(p, "/swagger/") {
+			c.JSON(http.StatusNotFound, &common.Response{Code: http.StatusNotFound, Msg: "资源不存在"})
+			return
+		}
+		serveIndex(c)
+	})
 }
