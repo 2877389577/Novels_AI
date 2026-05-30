@@ -33,6 +33,8 @@ type CreateAIProviderRequest struct {
 	Models []string `json:"models"`
 	// 默认模型，必填；章节剧情总结等自动 AI 任务会使用该模型。
 	DefaultModel string `json:"defaultModel" binding:"required" validatormsg:"默认模型不能为空"`
+	// 默认生图模型，非必填；需要图片生成能力的业务可优先读取该字段。
+	DefaultImageModel string `json:"defaultImageModel"`
 	// 最大上下文长度，不传时使用数据库字段零值。
 	MaxContextLength int64 `json:"maxContextLength"`
 	// 最大输入令牌数，不传时使用数据库字段零值。
@@ -73,6 +75,8 @@ type UpdateAIProviderRequest struct {
 	Models []string `json:"models"`
 	// 默认模型，必填；章节剧情总结等自动 AI 任务会使用该模型。
 	DefaultModel string `json:"defaultModel" binding:"required" validatormsg:"默认模型不能为空"`
+	// 默认生图模型，非必填；为空表示当前提供商暂不配置默认生图模型。
+	DefaultImageModel string `json:"defaultImageModel"`
 	// 最大上下文长度。
 	MaxContextLength int64 `json:"maxContextLength"`
 	// 最大输入令牌数。

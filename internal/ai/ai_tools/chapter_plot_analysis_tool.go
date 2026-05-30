@@ -1,6 +1,9 @@
 package ai_tools
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/bytedance/sonic"
 	"github.com/cloudwego/eino/components/tool/utils"
 	"github.com/cloudwego/eino/schema"
@@ -34,8 +37,9 @@ func GetChapterPlotAnalysisToolSchema() (*schema.ToolInfo, error) {
 	)
 }
 
-// ToolOutput2ChapterPlotAnalysisTool 从模型返回的 content blocks 中解析章节剧情解析 tool 调用参数。
-func ToolOutput2ChapterPlotAnalysisTool(blocks []*schema.ContentBlock) (*ChapterPlotAnalysisTool, bool) {
+// ParseChapterPlotAnalysisToolOutput 从模型返回的 content blocks 中解析章节剧情解析 tool 调用参数。
+// 返回 error 而不是静默 false，方便异步任务在日志中记录模型未按约定返回时的具体原因。
+func ParseChapterPlotAnalysisToolOutput(blocks []*schema.ContentBlock) (*ChapterPlotAnalysisTool, error) {
 	for _, block := range blocks {
 		if block.Type != schema.ContentBlockTypeFunctionToolCall || block.FunctionToolCall == nil {
 			continue
@@ -46,11 +50,21 @@ func ToolOutput2ChapterPlotAnalysisTool(blocks []*schema.ContentBlock) (*Chapter
 
 		var result ChapterPlotAnalysisTool
 		if err := sonic.Unmarshal([]byte(block.FunctionToolCall.Arguments), &result); err != nil {
-			continue
+			return nil, fmt.Errorf("解析 %s 参数失败: %w", chapterPlotAnalysisToolName, err)
 		}
 
-		return &result, true
+		if strings.TrimSpace(result.Summary) == "" {
+			return nil, fmt.Errorf("%s 返回的 summary 为空", chapterPlotAnalysisToolName)
+		}
+
+		return &result, nil
 	}
 
-	return nil, false
+	return nil, fmt.Errorf("AI 响应未调用 %s", chapterPlotAnalysisToolName)
+}
+
+// ToolOutput2ChapterPlotAnalysisTool 保留旧的 bool 返回形式，便于已有调用方继续按“是否解析成功”判断。
+func ToolOutput2ChapterPlotAnalysisTool(blocks []*schema.ContentBlock) (*ChapterPlotAnalysisTool, bool) {
+	result, err := ParseChapterPlotAnalysisToolOutput(blocks)
+	return result, err == nil
 }

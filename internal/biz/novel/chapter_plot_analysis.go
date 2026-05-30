@@ -5,12 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"runtime/debug"
 	"strings"
 	"time"
 
 	"Novels_AI/backend/internal/ai"
 	"Novels_AI/backend/internal/ai/ai_tools"
 	"Novels_AI/backend/internal/biz/aiprovider"
+	aitaskconfigbiz "Novels_AI/backend/internal/biz/aitaskconfig"
 	"Novels_AI/backend/internal/data"
 	"Novels_AI/backend/internal/event"
 	"Novels_AI/backend/internal/pkg/common"
@@ -37,6 +39,10 @@ type ChapterPlotAnalysisRepo interface {
 	FindByChapterID(ctx context.Context, novelID int64, chapterID uint) (*data.ChapterPlotAnalysis, error)
 }
 
+type aiTaskConfigReader interface {
+	IsEnabled(ctx context.Context, taskCode string) (bool, error)
+}
+
 type chapterPlotAnalyzer interface {
 	Analyze(ctx context.Context, title, content string) (*ai_tools.ChapterPlotAnalysisTool, error)
 }
@@ -44,12 +50,14 @@ type chapterPlotAnalyzer interface {
 // ChapterPlotAnalysisUseCase 负责响应章节保存事件、调用 AI 总结剧情并提供独立查询能力。
 type ChapterPlotAnalysisUseCase struct {
 	analysisData ChapterPlotAnalysisRepo
+	taskConfig   aiTaskConfigReader
 	analyzer     chapterPlotAnalyzer
 }
 
-func NewChapterPlotAnalysisUseCase(analysisData ChapterPlotAnalysisRepo, aiProvider aiprovider.AIProviderRepo, apiKeyCipher aiprovider.APIKeyCipher) *ChapterPlotAnalysisUseCase {
+func NewChapterPlotAnalysisUseCase(analysisData ChapterPlotAnalysisRepo, taskConfig aiTaskConfigReader, aiProvider aiprovider.AIProviderRepo, apiKeyCipher aiprovider.APIKeyCipher) *ChapterPlotAnalysisUseCase {
 	return &ChapterPlotAnalysisUseCase{
 		analysisData: analysisData,
+		taskConfig:   taskConfig,
 		analyzer: &aiChapterPlotAnalyzer{
 			aiProvider:   aiProvider,
 			apiKeyCipher: apiKeyCipher,
@@ -74,6 +82,20 @@ func RegisterChapterPlotAnalysisEventHandlers(bus *event.Bus, useCase *ChapterPl
 			return err
 		}
 
+		enabled, err := useCase.chapterPlotAnalysisEnabled(ctx)
+		if err != nil {
+			if errors.Is(err, common.AITaskConfigNotFound) {
+				slog.InfoContext(ctx, "跳过自动章节剧情总结", "eventName", evt.Name, "novelId", payload.NovelID, "chapterId", payload.ChapterID, "reason", "config_missing")
+				return nil
+			}
+			slog.ErrorContext(ctx, "读取自动章节剧情总结配置失败", "eventName", evt.Name, "novelId", payload.NovelID, "chapterId", payload.ChapterID, "err", err)
+			return err
+		}
+		if !enabled {
+			slog.InfoContext(ctx, "跳过自动章节剧情总结", "eventName", evt.Name, "novelId", payload.NovelID, "chapterId", payload.ChapterID, "reason", "disabled")
+			return nil
+		}
+
 		// AI 章节剧情总结耗时较长，必须脱离保存章节的 HTTP 请求异步执行，避免用户等待模型生成。
 		asyncCtx := context.WithoutCancel(ctx)
 		go func(payload ChapterSavedEvent, evt event.Event) {
@@ -82,7 +104,7 @@ func RegisterChapterPlotAnalysisEventHandlers(bus *event.Bus, useCase *ChapterPl
 			// 异步任务不能把 panic 传播到 HTTP 请求链路，这里统一记录章节信息和耗时后结束 goroutine。
 			defer func() {
 				if recovered := recover(); recovered != nil {
-					slog.ErrorContext(asyncCtx, "异步生成章节剧情总结 panic", "eventName", evt.Name, "novelId", payload.NovelID, "chapterId", payload.ChapterID, "duration", time.Since(start).String(), "panic", recovered)
+					slog.ErrorContext(asyncCtx, "异步生成章节剧情总结 panic", "eventName", evt.Name, "novelId", payload.NovelID, "chapterId", payload.ChapterID, "duration", time.Since(start).String(), "panic", recovered, "stack", string(debug.Stack()))
 				}
 			}()
 
@@ -96,6 +118,11 @@ func RegisterChapterPlotAnalysisEventHandlers(bus *event.Bus, useCase *ChapterPl
 
 		return nil
 	})
+}
+
+// chapterPlotAnalysisEnabled 读取后台开关，只有显式启用时才允许自动触发 AI 章节总结。
+func (uc *ChapterPlotAnalysisUseCase) chapterPlotAnalysisEnabled(ctx context.Context) (bool, error) {
+	return uc.taskConfig.IsEnabled(ctx, aitaskconfigbiz.TaskCodeChapterPlotAnalysis)
 }
 
 // HandleChapterSaved 处理章节保存事件；注册到事件总线时会异步调用，直接调用时返回处理错误便于单测覆盖。
@@ -184,9 +211,10 @@ func (a *aiChapterPlotAnalyzer) Analyze(ctx context.Context, title, content stri
 		return nil, err
 	}
 
-	result, ok := ai_tools.ToolOutput2ChapterPlotAnalysisTool(generate.ContentBlocks)
-	if !ok {
-		return nil, common.ChapterPlotAnalysisNoResult
+	result, err := ai_tools.ParseChapterPlotAnalysisToolOutput(generate.ContentBlocks)
+	if err != nil {
+		slog.ErrorContext(ctx, "解析 AI 章节剧情总结工具输出失败", "contentBlockCount", len(generate.ContentBlocks), "err", err)
+		return nil, fmt.Errorf("%w: %v", common.ChapterPlotAnalysisNoResult, err)
 	}
 
 	return result, nil

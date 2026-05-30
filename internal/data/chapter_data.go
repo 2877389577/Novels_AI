@@ -36,7 +36,7 @@ func (d *ChapterData) Create(ctx context.Context, chapter *Chapter, wordDelta in
 	return chapter, nil
 }
 
-// List 按章节序号升序分页查询指定小说下的未删除章节。
+// List 按创建时间倒序分页查询指定小说下的未删除章节，最新创建的章节排在前面。
 func (d *ChapterData) List(ctx context.Context, novelID int64, offset, limit int) ([]Chapter, int64, error) {
 	var total int64
 	err := d.db.WithContext(ctx).
@@ -48,18 +48,22 @@ func (d *ChapterData) List(ctx context.Context, novelID int64, offset, limit int
 	}
 
 	var chapters []Chapter
-	err = d.db.WithContext(ctx).
-		Select("id, novel_id, chapter_no, title, word_count, created_at, updated_at").
-		Where("novel_id = ?", novelID).
-		Order("chapter_no ASC").
-		Offset(offset).
-		Limit(limit).
-		Find(&chapters).Error
+	err = d.chapterListQuery(ctx, novelID, offset, limit).Find(&chapters).Error
 	if err != nil {
 		return nil, 0, err
 	}
 
 	return chapters, total, nil
+}
+
+// chapterListQuery 统一构造章节列表查询；同创建时间下用 ID 倒序保证分页顺序稳定。
+func (d *ChapterData) chapterListQuery(ctx context.Context, novelID int64, offset, limit int) *gorm.DB {
+	return d.db.WithContext(ctx).
+		Select("id, novel_id, chapter_no, title, word_count, created_at, updated_at").
+		Where("novel_id = ?", novelID).
+		Order("created_at DESC, id DESC").
+		Offset(offset).
+		Limit(limit)
 }
 
 // FindByID 查询指定小说下的章节，避免跨小说 ID 误读其他小说的章节。

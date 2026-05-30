@@ -3,6 +3,8 @@ package service
 import (
 	docs "Novels_AI/backend/docs"
 	aiproviderbiz "Novels_AI/backend/internal/biz/aiprovider"
+	aitaskconfigbiz "Novels_AI/backend/internal/biz/aitaskconfig"
+	imageproviderbiz "Novels_AI/backend/internal/biz/imageprovider"
 	loginbiz "Novels_AI/backend/internal/biz/login"
 	novelbiz "Novels_AI/backend/internal/biz/novel"
 	uploadbiz "Novels_AI/backend/internal/biz/upload"
@@ -10,6 +12,8 @@ import (
 	"Novels_AI/backend/internal/event"
 	"Novels_AI/backend/internal/middleware"
 	aiproviderservice "Novels_AI/backend/internal/service/aiprovider"
+	aitaskconfigservice "Novels_AI/backend/internal/service/aitaskconfig"
+	imageproviderservice "Novels_AI/backend/internal/service/imageprovider"
 	"Novels_AI/backend/internal/service/login"
 	novelservice "Novels_AI/backend/internal/service/novel"
 	uploadservice "Novels_AI/backend/internal/service/upload"
@@ -60,6 +64,9 @@ func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, upl
 	novelData := data.NewNovelData(db)
 	novelUseCase := novelbiz.NewNovelUseCase(novelData)
 	novelService := novelservice.NewNovelService(novelUseCase)
+	mindMapData := data.NewNovelMindMapData(db)
+	mindMapUseCase := novelbiz.NewMindMapUseCase(novelData, mindMapData)
+	mindMapService := novelservice.NewMindMapService(mindMapUseCase)
 	// 章节相关接口
 	chapterData := data.NewChapterData(db)
 	chapterPlotAnalysisData := data.NewChapterPlotAnalysisData(db)
@@ -69,9 +76,16 @@ func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, upl
 	aiProviderData := data.NewAIProviderData(db)
 	aiProviderUseCase := aiproviderbiz.NewAIProviderUseCase(aiProviderData, apiKeyCipher)
 	aiProviderService := aiproviderservice.NewAIProviderService(aiProviderUseCase)
+	aiTaskConfigData := data.NewAITaskConfigData(db)
+	aiTaskConfigUseCase := aitaskconfigbiz.NewAITaskConfigUseCase(aiTaskConfigData)
+	aiTaskConfigService := aitaskconfigservice.NewAITaskConfigService(aiTaskConfigUseCase)
+	s3UploadData := data.NewS3UploadData(uploadConfig)
+	imageAIProviderData := data.NewImageAIProviderData(db)
+	imageAIProviderUseCase := imageproviderbiz.NewImageAIProviderUseCase(imageAIProviderData, apiKeyCipher, s3UploadData)
+	imageAIProviderService := imageproviderservice.NewImageAIProviderService(imageAIProviderUseCase)
 	contentOptimizationUseCase := novelbiz.NewContentOptimizationUseCase(novelData, aiProviderData, apiKeyCipher)
 	contentOptimizationService := novelservice.NewContentOptimizationService(contentOptimizationUseCase)
-	chapterPlotAnalysisUseCase := novelbiz.NewChapterPlotAnalysisUseCase(chapterPlotAnalysisData, aiProviderData, apiKeyCipher)
+	chapterPlotAnalysisUseCase := novelbiz.NewChapterPlotAnalysisUseCase(chapterPlotAnalysisData, aiTaskConfigUseCase, aiProviderData, apiKeyCipher)
 	novelbiz.RegisterChapterPlotAnalysisEventHandlers(eventBus, chapterPlotAnalysisUseCase)
 	chapterUseCase := novelbiz.NewChapterUseCase(novelData, chapterData, eventBus)
 	chapterService := novelservice.NewChapterService(chapterUseCase, chapterPlotAnalysisUseCase)
@@ -85,7 +99,6 @@ func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, upl
 	characterRelationService := novelservice.NewCharacterRelationService(characterRelationUseCase)
 
 	// 上传相关接口
-	s3UploadData := data.NewS3UploadData(uploadConfig)
 	uploadUseCase := uploadbiz.NewUploadUseCase(s3UploadData)
 	uploadService := uploadservice.NewUploadService(uploadUseCase)
 
@@ -106,6 +119,12 @@ func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, upl
 	novelGroup.DELETE("/:id", novelService.Delete)
 	novelGroup.POST("/:id/outline", novelService.SaveOutline)
 	novelGroup.GET("/:id/outline", novelService.GetOutline)
+	novelGroup.GET("/:id/mind-map", mindMapService.Get)
+	novelGroup.PUT("/:id/mind-map", mindMapService.Save)
+	novelGroup.POST("/:id/mind-map/nodes", mindMapService.CreateNode)
+	novelGroup.GET("/:id/mind-map/nodes/:nodeUid", mindMapService.GetNode)
+	novelGroup.PUT("/:id/mind-map/nodes/:nodeUid", mindMapService.UpdateNode)
+	novelGroup.DELETE("/:id/mind-map/nodes/:nodeUid", mindMapService.DeleteNode)
 	novelGroup.POST("/:id/content/optimize", contentOptimizationService.Optimize)
 	novelGroup.POST("/:id/chapters", chapterService.Create)
 	novelGroup.GET("/:id/chapters", chapterService.List)
@@ -138,6 +157,24 @@ func AddRoute(engine *gin.Engine, requestsPerMinute int, sessionSalt string, upl
 	aiProviderGroup.GET("/:id", aiProviderService.Get)
 	aiProviderGroup.PUT("/:id", aiProviderService.Update)
 	aiProviderGroup.DELETE("/:id", aiProviderService.Delete)
+
+	// 主动执行 AI 任务配置接口需要登录会话，避免匿名用户开关后台自动 AI 功能。
+	aiTaskConfigGroup := group.Group("/ai-task-configs", middleware.SessionAuth())
+	aiTaskConfigGroup.GET("", aiTaskConfigService.List)
+	aiTaskConfigGroup.PUT("/:taskCode", aiTaskConfigService.Update)
+
+	// 生图 AI 提供商接口需要登录会话，避免匿名用户读取或维护生图密钥。
+	imageAIProviderGroup := group.Group("/image-ai-providers", middleware.SessionAuth())
+	imageAIProviderGroup.POST("", imageAIProviderService.Create)
+	imageAIProviderGroup.POST("/enable", imageAIProviderService.Enable)
+	imageAIProviderGroup.GET("", imageAIProviderService.List)
+	imageAIProviderGroup.GET("/:id", imageAIProviderService.Get)
+	imageAIProviderGroup.PUT("/:id", imageAIProviderService.Update)
+	imageAIProviderGroup.DELETE("/:id", imageAIProviderService.Delete)
+
+	// 图片生成接口会使用当前启用的生图 AI 提供商，并把生成结果上传到对象存储。
+	imageGroup := group.Group("/images", middleware.SessionAuth())
+	imageGroup.POST("/generate", imageAIProviderService.GenerateImage)
 
 	// 上传接口同样需要登录会话，避免匿名用户写入对象存储。
 	group.POST("/upload", middleware.SessionAuth(), uploadService.Upload)

@@ -393,6 +393,500 @@ const docTemplate = `{
                 }
             }
         },
+        "/ai-task-configs": {
+            "get": {
+                "description": "查询所有后台自动触发的 AI 任务配置，后台可据此展示开关状态",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ai-task-config"
+                ],
+                "summary": "查询主动执行 AI 任务配置",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/aitaskconfig.aiTaskConfigListResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "未登录",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "系统错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.SystemError"
+                        }
+                    }
+                }
+            }
+        },
+        "/ai-task-configs/{taskCode}": {
+            "put": {
+                "description": "按任务编码更新后台自动触发 AI 任务的启用状态",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ai-task-config"
+                ],
+                "summary": "更新主动执行 AI 任务开关",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "任务编码，例如 chapter_plot_analysis",
+                        "name": "taskCode",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "任务开关配置",
+                        "name": "config",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateAITaskConfigRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/aitaskconfig.aiTaskConfigResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "未登录",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "AI任务配置不存在",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "系统错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.SystemError"
+                        }
+                    }
+                }
+            }
+        },
+        "/image-ai-providers": {
+            "get": {
+                "description": "分页查询专用图片生成 AI 提供商列表，列表不返回 API Key",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "image-ai-provider"
+                ],
+                "summary": "查询生图 AI 提供商列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "页码，默认 1",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页数量，默认 10，最大 100",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/imageprovider.imageAIProviderListResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "系统错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.SystemError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "创建专用图片生成 AI 提供商，API Key 入库前会加密；defaultModel 为生成图片接口未指定模型时使用的默认生图模型",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "image-ai-provider"
+                ],
+                "summary": "新增生图 AI 提供商",
+                "parameters": [
+                    {
+                        "description": "生图 AI 提供商信息",
+                        "name": "provider",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateImageAIProviderRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/imageprovider.imageAIProviderResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "系统错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.SystemError"
+                        }
+                    }
+                }
+            }
+        },
+        "/image-ai-providers/enable": {
+            "post": {
+                "description": "将当前已启用的生图 AI 提供商全部设为未启用，再启用请求中指定的生图 AI 提供商",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "image-ai-provider"
+                ],
+                "summary": "一键启用生图 AI 提供商",
+                "parameters": [
+                    {
+                        "description": "需要启用的生图 AI 提供商 ID",
+                        "name": "provider",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.EnableImageAIProviderRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "系统错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.SystemError"
+                        }
+                    }
+                }
+            }
+        },
+        "/image-ai-providers/{id}": {
+            "get": {
+                "description": "按 ID 查询专用图片生成 AI 提供商详情，返回解密后的 API Key 供编辑页回显",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "image-ai-provider"
+                ],
+                "summary": "查询生图 AI 提供商详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "生图 AI 提供商 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/imageprovider.imageAIProviderResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "系统错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.SystemError"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "按 ID 全量更新专用图片生成 AI 提供商，API Key 会重新加密",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "image-ai-provider"
+                ],
+                "summary": "更新生图 AI 提供商",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "生图 AI 提供商 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "生图 AI 提供商信息",
+                        "name": "provider",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateImageAIProviderRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/imageprovider.imageAIProviderResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "系统错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.SystemError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "按 ID 物理删除专用图片生成 AI 提供商",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "image-ai-provider"
+                ],
+                "summary": "删除生图 AI 提供商",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "生图 AI 提供商 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "系统错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.SystemError"
+                        }
+                    }
+                }
+            }
+        },
+        "/images/generate": {
+            "post": {
+                "description": "使用当前已启用的专用生图 AI 提供商生成图片，并上传到 S3 兼容对象存储。请求未传 modelName 时使用已启用提供商的 defaultModel",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "image-generation"
+                ],
+                "summary": "生成图片",
+                "parameters": [
+                    {
+                        "description": "图片生成请求参数。prompt 为图片提示词，必填；modelName 可为空",
+                        "name": "image",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.GenerateImageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/imageprovider.generateImageResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "系统错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.SystemError"
+                        }
+                    }
+                }
+            }
+        },
         "/login": {
             "post": {
                 "description": "登陆接口，只需要接受密码",
@@ -2191,6 +2685,387 @@ const docTemplate = `{
                 }
             }
         },
+        "/novels/{id}/mind-map": {
+            "get": {
+                "description": "查询指定小说的 SimpleMindMap 完整 JSON 数据；首次查询时会初始化默认根节点，前端拿到 mindMapData 后可直接 setData",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "mind-map"
+                ],
+                "summary": "查询小说思维导图",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "小说 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/novel.mindMapResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "系统错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.SystemError"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "保存 SimpleMindMap 完整 JSON 数据，推荐前端在保存按钮、离开页面前或防抖自动保存时提交 getData(true) 的结果",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "mind-map"
+                ],
+                "summary": "保存小说思维导图",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "小说 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "思维导图数据",
+                        "name": "mindMap",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.SaveMindMapRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/novel.mindMapResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "系统错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.SystemError"
+                        }
+                    }
+                }
+            }
+        },
+        "/novels/{id}/mind-map/nodes": {
+            "post": {
+                "description": "在指定父节点下新增 SimpleMindMap 节点；适合新增后立即落库，不强制前端每次新增都调用",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "mind-map"
+                ],
+                "summary": "新增思维导图节点",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "小说 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "节点数据",
+                        "name": "node",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateMindMapNodeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/novel.mindMapNodeResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "未登录",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "小说或父节点不存在",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "409": {
+                        "description": "节点已存在",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "系统错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.SystemError"
+                        }
+                    }
+                }
+            }
+        },
+        "/novels/{id}/mind-map/nodes/{nodeUid}": {
+            "get": {
+                "description": "按 SimpleMindMap 节点 uid 查询单个节点 JSON；已有整图数据时前端通常可以直接本地查找",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "mind-map"
+                ],
+                "summary": "查询思维导图节点",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "小说 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "节点 uid",
+                        "name": "nodeUid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/novel.mindMapNodeResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "系统错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.SystemError"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "更新指定 SimpleMindMap 节点的 data 字段，保留 children 子树；多节点或布局变更建议直接保存整图",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "mind-map"
+                ],
+                "summary": "修改思维导图节点",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "小说 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "节点 uid",
+                        "name": "nodeUid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "节点 data 数据",
+                        "name": "node",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateMindMapNodeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/common.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/novel.mindMapNodeResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "未登录",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "小说或节点不存在",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "系统错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.SystemError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "删除指定 SimpleMindMap 节点及其所有后代节点；删除父节点会连同子树一起删除",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "mind-map"
+                ],
+                "summary": "删除思维导图节点",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "小说 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "节点 uid",
+                        "name": "nodeUid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "未登录",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "小说或节点不存在",
+                        "schema": {
+                            "$ref": "#/definitions/common.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "系统错误",
+                        "schema": {
+                            "$ref": "#/definitions/common.SystemError"
+                        }
+                    }
+                }
+            }
+        },
         "/novels/{id}/outline": {
             "get": {
                 "description": "查询指定小说的大纲内容。该接口只返回 novelOutline 字段，不返回小说标题、简介、作者、封面、字数和元数据等详情字段。",
@@ -2447,6 +3322,10 @@ const docTemplate = `{
                     "description": "创建时间",
                     "type": "string"
                 },
+                "defaultImageModel": {
+                    "description": "默认生图模型",
+                    "type": "string"
+                },
                 "defaultModel": {
                     "description": "默认模型",
                     "type": "string"
@@ -2484,6 +3363,50 @@ const docTemplate = `{
                 },
                 "providerType": {
                     "description": "ai 提供商类型",
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "description": "更新时间",
+                    "type": "string"
+                }
+            }
+        },
+        "aitaskconfig.aiTaskConfigListResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/aitaskconfig.aiTaskConfigResponse"
+                    }
+                }
+            }
+        },
+        "aitaskconfig.aiTaskConfigResponse": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "任务说明",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "配置 ID",
+                    "type": "integer"
+                },
+                "isEnabled": {
+                    "description": "是否启用",
+                    "type": "boolean"
+                },
+                "taskCode": {
+                    "description": "任务编码",
+                    "type": "string"
+                },
+                "taskName": {
+                    "description": "任务名称",
                     "type": "string"
                 },
                 "updatedAt": {
@@ -2598,6 +3521,10 @@ const docTemplate = `{
                 "configJson": {
                     "description": "ai 提供商额外配置。",
                     "type": "object"
+                },
+                "defaultImageModel": {
+                    "description": "默认生图模型，非必填；需要图片生成能力的业务可优先读取该字段。",
+                    "type": "string"
                 },
                 "defaultModel": {
                     "description": "默认模型，必填；章节剧情总结等自动 AI 任务会使用该模型。",
@@ -2801,6 +3728,74 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.CreateImageAIProviderRequest": {
+            "type": "object",
+            "required": [
+                "apiKey",
+                "baseUrl",
+                "defaultModel",
+                "name",
+                "providerType"
+            ],
+            "properties": {
+                "apiKey": {
+                    "description": "API Key 明文，必填，业务层会在入库前加密。",
+                    "type": "string"
+                },
+                "baseUrl": {
+                    "description": "生图 AI 提供商基础 URL，必填，业务层会拼接 /v1/images/generations。",
+                    "type": "string"
+                },
+                "configJson": {
+                    "description": "生图 AI 提供商额外配置，预留给不同厂商的扩展参数。",
+                    "type": "object"
+                },
+                "defaultModel": {
+                    "description": "默认生图模型，必填；生成图片接口没有传 modelName 时会使用该模型。",
+                    "type": "string"
+                },
+                "isEnabled": {
+                    "description": "是否启用；启用时业务层会确保全局只有一个生图 AI 提供商处于启用状态。",
+                    "type": "boolean"
+                },
+                "models": {
+                    "description": "支持的生图模型列表。",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "name": {
+                    "description": "生图 AI 提供商名称，必填。",
+                    "type": "string"
+                },
+                "providerType": {
+                    "description": "生图 AI 提供商类型，首版按 OpenAI 兼容协议调用，必填。",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.CreateMindMapNodeRequest": {
+            "type": "object",
+            "required": [
+                "node",
+                "parentUid"
+            ],
+            "properties": {
+                "index": {
+                    "description": "插入位置；不传或越界时追加到末尾。",
+                    "type": "integer"
+                },
+                "node": {
+                    "description": "SimpleMindMap 节点 JSON，包含 data 和可选 children。",
+                    "type": "object"
+                },
+                "parentUid": {
+                    "description": "父节点 uid，新节点会追加到该节点 children 下。",
+                    "type": "string"
+                }
+            }
+        },
         "dto.CreateNovelRequest": {
             "type": "object",
             "required": [
@@ -2842,6 +3837,34 @@ const docTemplate = `{
                 "id": {
                     "description": "ID 是需要被设置为启用状态的 ai 提供商主键。",
                     "type": "integer"
+                }
+            }
+        },
+        "dto.EnableImageAIProviderRequest": {
+            "type": "object",
+            "required": [
+                "id"
+            ],
+            "properties": {
+                "id": {
+                    "description": "ID 是需要被设置为启用状态的生图 AI 提供商主键。",
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.GenerateImageRequest": {
+            "type": "object",
+            "required": [
+                "prompt"
+            ],
+            "properties": {
+                "modelName": {
+                    "description": "ModelName 是本次指定的生图模型，可为空；为空时使用启用提供商的 defaultModel。",
+                    "type": "string"
+                },
+                "prompt": {
+                    "description": "Prompt 是图片生成提示词，必填。",
+                    "type": "string"
                 }
             }
         },
@@ -2906,6 +3929,18 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.SaveMindMapRequest": {
+            "type": "object",
+            "required": [
+                "mindMapData"
+            ],
+            "properties": {
+                "mindMapData": {
+                    "description": "SimpleMindMap 的完整 JSON 数据，推荐前端传 getData(true) 的结果；这样主题、布局、视图和插件字段都会一起保存。",
+                    "type": "object"
+                }
+            }
+        },
         "dto.SaveNovelOutlineRequest": {
             "type": "object",
             "properties": {
@@ -2936,6 +3971,10 @@ const docTemplate = `{
                 "configJson": {
                     "description": "ai 提供商额外配置。",
                     "type": "object"
+                },
+                "defaultImageModel": {
+                    "description": "默认生图模型，非必填；为空表示当前提供商暂不配置默认生图模型。",
+                    "type": "string"
                 },
                 "defaultModel": {
                     "description": "默认模型，必填；章节剧情总结等自动 AI 任务会使用该模型。",
@@ -2971,6 +4010,18 @@ const docTemplate = `{
                 "providerType": {
                     "description": "ai 提供商类型，必填。",
                     "type": "string"
+                }
+            }
+        },
+        "dto.UpdateAITaskConfigRequest": {
+            "type": "object",
+            "required": [
+                "isEnabled"
+            ],
+            "properties": {
+                "isEnabled": {
+                    "description": "IsEnabled 表示任务是否启用；使用指针是为了让 false 也能通过 required 校验。",
+                    "type": "boolean"
                 }
             }
         },
@@ -3141,6 +4192,65 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.UpdateImageAIProviderRequest": {
+            "type": "object",
+            "required": [
+                "apiKey",
+                "baseUrl",
+                "defaultModel",
+                "name",
+                "providerType"
+            ],
+            "properties": {
+                "apiKey": {
+                    "description": "API Key 明文，必填，业务层会在入库前重新加密。",
+                    "type": "string"
+                },
+                "baseUrl": {
+                    "description": "生图 AI 提供商基础 URL，必填，业务层会拼接 /v1/images/generations。",
+                    "type": "string"
+                },
+                "configJson": {
+                    "description": "生图 AI 提供商额外配置，预留给不同厂商的扩展参数。",
+                    "type": "object"
+                },
+                "defaultModel": {
+                    "description": "默认生图模型，必填；生成图片接口没有传 modelName 时会使用该模型。",
+                    "type": "string"
+                },
+                "isEnabled": {
+                    "description": "是否启用；启用时业务层会确保全局只有一个生图 AI 提供商处于启用状态。",
+                    "type": "boolean"
+                },
+                "models": {
+                    "description": "支持的生图模型列表。",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "name": {
+                    "description": "生图 AI 提供商名称，必填。",
+                    "type": "string"
+                },
+                "providerType": {
+                    "description": "生图 AI 提供商类型，首版按 OpenAI 兼容协议调用，必填。",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.UpdateMindMapNodeRequest": {
+            "type": "object",
+            "required": [
+                "data"
+            ],
+            "properties": {
+                "data": {
+                    "description": "SimpleMindMap 节点 data 字段，备注、概要、关联线等节点附加数据都保存在这里。",
+                    "type": "object"
+                }
+            }
+        },
         "dto.UpdateNovelRequest": {
             "type": "object",
             "required": [
@@ -3180,6 +4290,99 @@ const docTemplate = `{
                     "description": "小说字数。",
                     "type": "integer",
                     "minimum": 0
+                }
+            }
+        },
+        "imageprovider.generateImageResponse": {
+            "type": "object",
+            "properties": {
+                "imageKey": {
+                    "description": "S3 对象 Key",
+                    "type": "string"
+                },
+                "imageUrl": {
+                    "description": "S3 公开访问 URL",
+                    "type": "string"
+                },
+                "modelName": {
+                    "description": "本次实际使用的生图模型",
+                    "type": "string"
+                },
+                "providerId": {
+                    "description": "本次实际使用的生图 AI 提供商 ID",
+                    "type": "integer"
+                }
+            }
+        },
+        "imageprovider.imageAIProviderListResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/imageprovider.imageAIProviderResponse"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "imageprovider.imageAIProviderResponse": {
+            "type": "object",
+            "properties": {
+                "apiKey": {
+                    "description": "API Key 明文，仅详情类响应返回",
+                    "type": "string"
+                },
+                "baseUrl": {
+                    "description": "生图 AI 提供商基础 URL",
+                    "type": "string"
+                },
+                "configJson": {
+                    "description": "生图 AI 提供商额外配置",
+                    "type": "object"
+                },
+                "createdAt": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "defaultModel": {
+                    "description": "默认生图模型",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "生图 AI 提供商 ID",
+                    "type": "integer"
+                },
+                "isEnabled": {
+                    "description": "是否启用",
+                    "type": "boolean"
+                },
+                "models": {
+                    "description": "支持的生图模型列表",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "name": {
+                    "description": "生图 AI 提供商名称",
+                    "type": "string"
+                },
+                "providerType": {
+                    "description": "生图 AI 提供商类型",
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "description": "更新时间",
+                    "type": "string"
                 }
             }
         },
@@ -3838,6 +5041,40 @@ const docTemplate = `{
                 },
                 "status": {
                     "description": "角色状态：1 在线，2 下线",
+                    "type": "integer"
+                },
+                "updatedAt": {
+                    "description": "更新时间",
+                    "type": "string"
+                }
+            }
+        },
+        "novel.mindMapNodeResponse": {
+            "type": "object",
+            "properties": {
+                "node": {
+                    "description": "SimpleMindMap 单个节点 JSON。",
+                    "type": "object"
+                }
+            }
+        },
+        "novel.mindMapResponse": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "思维导图 ID",
+                    "type": "integer"
+                },
+                "mindMapData": {
+                    "description": "SimpleMindMap 完整 JSON 数据，可直接传给 setData。",
+                    "type": "object"
+                },
+                "novelId": {
+                    "description": "小说 ID",
                     "type": "integer"
                 },
                 "updatedAt": {

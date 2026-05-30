@@ -111,6 +111,17 @@ var (
 )
 
 var (
+	// MindMapNotFound 表示指定小说还没有保存过思维导图数据。
+	MindMapNotFound = NewHTTPError(http.StatusNotFound, 8000, "思维导图不存在")
+	// MindMapNodeNotFound 表示思维导图中没有找到指定节点。
+	MindMapNodeNotFound = NewHTTPError(http.StatusNotFound, 8001, "思维导图节点不存在")
+	// MindMapNodeExists 表示思维导图中已经存在相同 uid 的节点。
+	MindMapNodeExists = NewHTTPError(http.StatusConflict, 8002, "思维导图节点已存在")
+	// MindMapRootDeleteNotAllowed 表示不能删除思维导图根节点。
+	MindMapRootDeleteNotAllowed = NewHTTPError(http.StatusBadRequest, 8003, "不能删除思维导图根节点")
+)
+
+var (
 	// CharacterNameRequired 表示角色名缺失，角色名是角色资料中唯一强制要求的业务字段。
 	CharacterNameRequired = NewHTTPError(http.StatusBadRequest, 5000, "角色名称不能为空")
 	// CharacterNotFound 表示当前小说下没有找到指定角色，避免跨小说误操作其他角色。
@@ -140,6 +151,30 @@ var (
 	AIProviderModelsQueryFailed = NewHTTPError(http.StatusBadGateway, 6006, "AI提供商模型查询失败")
 	// AIProviderEnabledConflict 表示当前系统已经存在启用的 ai 提供商，业务层应阻止再启用其他供应商。
 	AIProviderEnabledConflict = NewHTTPError(http.StatusOK, 6007, "已有启用的AI提供商")
+)
+
+var (
+	// AITaskConfigNotFound 表示没有找到指定主动执行 AI 任务配置。
+	AITaskConfigNotFound = NewHTTPError(http.StatusNotFound, 10000, "AI任务配置不存在")
+)
+
+var (
+	// ImageAIProviderNotFound 表示没有找到指定生图 AI 提供商。
+	ImageAIProviderNotFound = NewHTTPError(http.StatusNotFound, 9000, "生图AI提供商不存在")
+	// ImageAIProviderNotEnabled 表示当前系统没有启用的生图 AI 提供商，图片生成不可执行。
+	ImageAIProviderNotEnabled = NewHTTPError(http.StatusNotFound, 9001, "未启用生图AI提供商")
+	// ImageAIProviderDefaultModelNotConfigured 表示启用的生图 AI 提供商没有配置默认生图模型。
+	ImageAIProviderDefaultModelNotConfigured = NewHTTPError(http.StatusBadGateway, 9002, "未配置默认生图模型")
+	// ImageAIProviderAPIKeyDecryptFailed 表示已入库生图密钥无法按当前配置解密。
+	ImageAIProviderAPIKeyDecryptFailed = NewHTTPError(http.StatusInternalServerError, 9003, "生图AI提供商API密钥解密失败")
+	// ImageGenerationFailed 表示调用上游生图接口或下载上游图片失败。
+	ImageGenerationFailed = NewHTTPError(http.StatusBadGateway, 9004, "图片生成失败")
+	// ImageGenerationNoImage 表示上游生图接口没有返回可处理的图片 URL 或 base64。
+	ImageGenerationNoImage = NewHTTPError(http.StatusBadGateway, 9005, "AI未返回图片")
+	// ImageGenerationUploadFailed 表示图片已生成但写入对象存储失败。
+	ImageGenerationUploadFailed = NewHTTPError(http.StatusInternalServerError, 9006, "AI生成图片上传失败")
+	// ImageAIProviderEnabledConflict 表示当前系统已经存在启用的生图 AI 提供商，业务层应阻止再启用其他供应商。
+	ImageAIProviderEnabledConflict = NewHTTPError(http.StatusOK, 9007, "已有启用的生图AI提供商")
 )
 
 var (

@@ -23,11 +23,12 @@ type AIProvider struct {
 
 	ConfigJSON datatypes.JSON `gorm:"column:config_json;type:jsonb;not null;default:'{}';comment:配置JSON" json:"config_json"`
 
-	Models           pq.StringArray `gorm:"column:models;type:text;comment:支持的模型列表" json:"models"`
-	DefaultModel     string         `gorm:"column:default_model;type:varchar(255);not null;default:'';comment:默认模型" json:"default_model"`
-	MaxContextLength int64          `gorm:"column:max_context_length;type:bigint;comment:最大上下文长度" json:"max_context_length"`
-	MaxInputTokens   int            `gorm:"column:max_input_tokens;type:int;comment:最大输入令牌数" json:"max_input_tokens"`
-	MaxOutputTokens  int            `gorm:"column:max_output_tokens;type:int;comment:最大输出令牌数" json:"max_output_tokens"`
+	Models            pq.StringArray `gorm:"column:models;type:text;comment:支持的模型列表" json:"models"`
+	DefaultModel      string         `gorm:"column:default_model;type:varchar(255);not null;default:'';comment:默认模型" json:"default_model"`
+	DefaultImageModel string         `gorm:"column:default_image_model;type:varchar(255);not null;default:'';comment:默认生图模型" json:"default_image_model"`
+	MaxContextLength  int64          `gorm:"column:max_context_length;type:bigint;comment:最大上下文长度" json:"max_context_length"`
+	MaxInputTokens    int            `gorm:"column:max_input_tokens;type:int;comment:最大输入令牌数" json:"max_input_tokens"`
+	MaxOutputTokens   int            `gorm:"column:max_output_tokens;type:int;comment:最大输出令牌数" json:"max_output_tokens"`
 
 	CreatedAt time.Time `gorm:"column:created_at;not null;default:now();comment:创建时间" json:"created_at"`
 

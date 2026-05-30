@@ -51,6 +51,8 @@ type aiProviderResponse struct {
 	Models []string `json:"models"`
 	// 默认模型
 	DefaultModel string `json:"defaultModel"`
+	// 默认生图模型
+	DefaultImageModel string `json:"defaultImageModel"`
 	// 最大上下文长度
 	MaxContextLength int64 `json:"maxContextLength"`
 	// 最大输入令牌数
@@ -376,19 +378,20 @@ func toAIProviderListItemResponse(provider *aiproviderbiz.AIProvider) aiProvider
 	}
 
 	return aiProviderResponse{
-		ID:               provider.ID,
-		Name:             provider.Name,
-		ProviderType:     provider.ProviderType,
-		APIKey:           provider.APIKeyEncrypted,
-		BaseURL:          provider.BaseURL,
-		IsEnabled:        provider.IsEnabled,
-		ConfigJSON:       configJSON,
-		Models:           []string(provider.Models),
-		DefaultModel:     provider.DefaultModel,
-		MaxContextLength: provider.MaxContextLength,
-		MaxInputTokens:   provider.MaxInputTokens,
-		MaxOutputTokens:  provider.MaxOutputTokens,
-		CreatedAt:        provider.CreatedAt.Format("2006-01-02T15:04:05"),
-		UpdatedAt:        provider.UpdatedAt.Format("2006-01-02T15:04:05"),
+		ID:                provider.ID,
+		Name:              provider.Name,
+		ProviderType:      provider.ProviderType,
+		APIKey:            provider.APIKeyEncrypted,
+		BaseURL:           provider.BaseURL,
+		IsEnabled:         provider.IsEnabled,
+		ConfigJSON:        configJSON,
+		Models:            []string(provider.Models),
+		DefaultModel:      provider.DefaultModel,
+		DefaultImageModel: provider.DefaultImageModel,
+		MaxContextLength:  provider.MaxContextLength,
+		MaxInputTokens:    provider.MaxInputTokens,
+		MaxOutputTokens:   provider.MaxOutputTokens,
+		CreatedAt:         provider.CreatedAt.Format("2006-01-02T15:04:05"),
+		UpdatedAt:         provider.UpdatedAt.Format("2006-01-02T15:04:05"),
 	}
 }

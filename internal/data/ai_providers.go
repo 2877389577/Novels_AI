@@ -26,7 +26,7 @@ func NewAIProviderData(db *gorm.DB) *AIProviderData {
 func (d *AIProviderData) Create(ctx context.Context, provider *AIProvider) (*AIProvider, error) {
 	if err := d.db.WithContext(ctx).
 		// GORM 遇到带 default tag 的 bool 零值时可能让数据库默认值生效，这里显式选择字段以保证 false 能写入。
-		Select("Name", "ProviderType", "BaseURL", "APIKeyEncrypted", "IsEnabled", "ConfigJSON", "Models", "DefaultModel", "MaxContextLength", "MaxInputTokens", "MaxOutputTokens").
+		Select("Name", "ProviderType", "BaseURL", "APIKeyEncrypted", "IsEnabled", "ConfigJSON", "Models", "DefaultModel", "DefaultImageModel", "MaxContextLength", "MaxInputTokens", "MaxOutputTokens").
 		Create(provider).Error; err != nil {
 		return nil, err
 	}

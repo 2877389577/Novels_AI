@@ -92,17 +92,18 @@ func (uc *AIProviderUseCase) Create(ctx context.Context, params dto.CreateAIProv
 	}
 
 	provider, err := uc.repo.Create(ctx, &data.AIProvider{
-		Name:             params.Name,
-		ProviderType:     params.ProviderType,
-		BaseURL:          params.BaseURL,
-		APIKeyEncrypted:  encrypted,
-		IsEnabled:        isEnabled,
-		ConfigJSON:       normalizeConfigJSON(params.ConfigJSON.Value),
-		Models:           normalizeModels(params.Models),
-		DefaultModel:     strings.TrimSpace(params.DefaultModel),
-		MaxContextLength: params.MaxContextLength,
-		MaxInputTokens:   params.MaxInputTokens,
-		MaxOutputTokens:  params.MaxOutputTokens,
+		Name:              params.Name,
+		ProviderType:      params.ProviderType,
+		BaseURL:           params.BaseURL,
+		APIKeyEncrypted:   encrypted,
+		IsEnabled:         isEnabled,
+		ConfigJSON:        normalizeConfigJSON(params.ConfigJSON.Value),
+		Models:            normalizeModels(params.Models),
+		DefaultModel:      strings.TrimSpace(params.DefaultModel),
+		DefaultImageModel: strings.TrimSpace(params.DefaultImageModel),
+		MaxContextLength:  params.MaxContextLength,
+		MaxInputTokens:    params.MaxInputTokens,
+		MaxOutputTokens:   params.MaxOutputTokens,
 	})
 	if err != nil {
 		slog.ErrorContext(ctx, "新增 ai 提供商失败", "err", err)
@@ -166,18 +167,19 @@ func (uc *AIProviderUseCase) Update(ctx context.Context, params dto.UpdateAIProv
 	}
 
 	provider, err := uc.repo.Update(ctx, &data.AIProvider{
-		ID:               params.ID,
-		Name:             params.Name,
-		ProviderType:     params.ProviderType,
-		BaseURL:          params.BaseURL,
-		APIKeyEncrypted:  encrypted,
-		IsEnabled:        params.IsEnabled,
-		ConfigJSON:       normalizeConfigJSON(params.ConfigJSON.Value),
-		Models:           normalizeModels(params.Models),
-		DefaultModel:     strings.TrimSpace(params.DefaultModel),
-		MaxContextLength: params.MaxContextLength,
-		MaxInputTokens:   params.MaxInputTokens,
-		MaxOutputTokens:  params.MaxOutputTokens,
+		ID:                params.ID,
+		Name:              params.Name,
+		ProviderType:      params.ProviderType,
+		BaseURL:           params.BaseURL,
+		APIKeyEncrypted:   encrypted,
+		IsEnabled:         params.IsEnabled,
+		ConfigJSON:        normalizeConfigJSON(params.ConfigJSON.Value),
+		Models:            normalizeModels(params.Models),
+		DefaultModel:      strings.TrimSpace(params.DefaultModel),
+		DefaultImageModel: strings.TrimSpace(params.DefaultImageModel),
+		MaxContextLength:  params.MaxContextLength,
+		MaxInputTokens:    params.MaxInputTokens,
+		MaxOutputTokens:   params.MaxOutputTokens,
 	})
 	if err != nil {
 		slog.ErrorContext(ctx, "更新 ai 提供商失败", "err", err)
