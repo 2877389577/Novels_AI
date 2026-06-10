@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"Novels_AI/backend/internal/data/model"
 
@@ -35,6 +36,10 @@ func AutoMigrateDB(db *gorm.DB) error {
 
 	if err := db.AutoMigrate(values...); err != nil {
 		return fmt.Errorf("auto migrate database schema: %w", err)
+	}
+
+	if err := migrateChapterUniqueIndex(db); err != nil {
+		return fmt.Errorf("migrate chapter unique index: %w", err)
 	}
 
 	if err := seedDefaultAITaskConfigs(db); err != nil {
@@ -74,6 +79,71 @@ func missingMigrationTables(db *gorm.DB, models []migrationModel) []string {
 	}
 
 	return missingTables
+}
+
+// migrateChapterUniqueIndex 把旧的全量唯一约束迁移为部分唯一索引，避免软删除章节继续占用原章节编号。
+func migrateChapterUniqueIndex(db *gorm.DB) error {
+	ready, err := activeChapterUniqueIndexReady(db)
+	if err != nil {
+		return err
+	}
+	if ready {
+		return nil
+	}
+
+	if err := db.Exec(`ALTER TABLE chapters DROP CONSTRAINT IF EXISTS uk_novel_chapter_no`).Error; err != nil {
+		return fmt.Errorf("drop old chapter unique constraint: %w", err)
+	}
+	if err := db.Exec(`DROP INDEX IF EXISTS uk_novel_chapter_no`).Error; err != nil {
+		return fmt.Errorf("drop old chapter unique index: %w", err)
+	}
+	if err := db.Exec(`
+		CREATE UNIQUE INDEX IF NOT EXISTS uk_novel_chapter_no
+		ON chapters (novel_id, chapter_no)
+		WHERE deleted_at IS NULL
+	`).Error; err != nil {
+		return fmt.Errorf("create active chapter unique index: %w", err)
+	}
+
+	return nil
+}
+
+// activeChapterUniqueIndexReady 判断当前索引是否已经只约束未删除章节，避免每次启动都重建索引。
+func activeChapterUniqueIndexReady(db *gorm.DB) (bool, error) {
+	var constraintCount int64
+	if err := db.Raw(`
+		SELECT COUNT(*)
+		FROM pg_constraint c
+		JOIN pg_class t ON t.oid = c.conrelid
+		JOIN pg_namespace n ON n.oid = t.relnamespace
+		WHERE c.conname = ? AND t.relname = ? AND n.nspname = ANY (current_schemas(false))
+	`, "uk_novel_chapter_no", "chapters").Scan(&constraintCount).Error; err != nil {
+		return false, fmt.Errorf("check old chapter unique constraint: %w", err)
+	}
+	if constraintCount > 0 {
+		return false, nil
+	}
+
+	var indexDef string
+	if err := db.Raw(`
+		SELECT indexdef
+		FROM pg_indexes
+		WHERE schemaname = ANY (current_schemas(false)) AND tablename = ? AND indexname = ?
+		LIMIT 1
+	`, "chapters", "uk_novel_chapter_no").Scan(&indexDef).Error; err != nil {
+		return false, fmt.Errorf("check chapter unique index: %w", err)
+	}
+
+	return isActiveChapterUniqueIndex(indexDef), nil
+}
+
+// isActiveChapterUniqueIndex 用索引定义识别目标状态：同一本小说下未删除章节的 chapter_no 唯一。
+func isActiveChapterUniqueIndex(indexDef string) bool {
+	normalized := strings.ToLower(strings.Join(strings.Fields(indexDef), " "))
+
+	return strings.Contains(normalized, "create unique index") &&
+		strings.Contains(normalized, "(novel_id, chapter_no)") &&
+		strings.Contains(normalized, "deleted_at is null")
 }
 
 // seedDefaultAITaskConfigs 补齐系统内置主动 AI 任务配置，不覆盖管理员已经修改过的开关状态。
