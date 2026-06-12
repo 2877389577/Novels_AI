@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"mime"
-	"net/url"
 	"path"
 	"path/filepath"
 	"strings"
@@ -28,6 +27,7 @@ type S3UploadConfig struct {
 	AccessKeyID     string
 	SecretAccessKey string
 	PublicBaseURL   string
+	PresignExpire   time.Duration
 	UsePathStyle    bool
 	Prefix          string
 }
@@ -45,13 +45,17 @@ type UploadedObject struct {
 }
 
 type S3UploadData struct {
-	config S3UploadConfig
-	client *s3.Client
+	config        S3UploadConfig
+	client        *s3.Client
+	presignClient *s3.PresignClient
 }
 
 func NewS3UploadData(config S3UploadConfig) *S3UploadData {
 	if config.Region == "" {
 		config.Region = "us-east-1"
+	}
+	if config.PresignExpire <= 0 {
+		config.PresignExpire = time.Hour
 	}
 
 	awsConfig := aws.Config{
@@ -70,14 +74,15 @@ func NewS3UploadData(config S3UploadConfig) *S3UploadData {
 	})
 
 	return &S3UploadData{
-		config: config,
-		client: client,
+		config:        config,
+		client:        client,
+		presignClient: s3.NewPresignClient(client),
 	}
 }
 
-// Upload 将文件流写入 S3 兼容对象存储，并按配置生成公开访问地址。
+// Upload 将文件流写入 S3 兼容对象存储，并返回前端可直接访问的对象地址。
 func (s *S3UploadData) Upload(ctx context.Context, object UploadObject) (*UploadedObject, error) {
-	if s.config.Bucket == "" || s.config.PublicBaseURL == "" {
+	if s.config.Bucket == "" || s.config.AccessKeyID == "" || s.config.SecretAccessKey == "" {
 		return nil, ErrS3UploadConfigInvalid
 	}
 
@@ -105,9 +110,14 @@ func (s *S3UploadData) Upload(ctx context.Context, object UploadObject) (*Upload
 		return nil, err
 	}
 
+	objectURL, err := s.buildObjectURL(ctx, key)
+	if err != nil {
+		return nil, err
+	}
+
 	return &UploadedObject{
 		Key: key,
-		URL: buildPublicURL(s.config.PublicBaseURL, key),
+		URL: objectURL,
 	}, nil
 }
 
@@ -142,11 +152,15 @@ func randomHex(size int) (string, error) {
 	return hex.EncodeToString(bytes), nil
 }
 
-func buildPublicURL(publicBaseURL, key string) string {
-	parts := strings.Split(key, "/")
-	for index, part := range parts {
-		parts[index] = url.PathEscape(part)
+func (s *S3UploadData) buildObjectURL(ctx context.Context, key string) (string, error) {
+	// 存储桶无法开放公共读权限时，使用 access key/secret 生成临时 GET 链接给前端访问。
+	request, err := s.presignClient.PresignGetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(s.config.Bucket),
+		Key:    aws.String(key),
+	}, s3.WithPresignExpires(s.config.PresignExpire))
+	if err != nil {
+		return "", err
 	}
 
-	return strings.TrimRight(publicBaseURL, "/") + "/" + strings.Join(parts, "/")
+	return request.URL, nil
 }

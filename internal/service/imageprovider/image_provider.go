@@ -64,7 +64,7 @@ type imageAIProviderListResponse struct {
 }
 
 type generateImageResponse struct {
-	// S3 公开访问 URL
+	// S3 临时签名访问 URL
 	ImageURL string `json:"imageUrl"`
 	// S3 对象 Key
 	ImageKey string `json:"imageKey"`

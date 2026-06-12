@@ -56,8 +56,10 @@ type S3UploadConfig struct {
 	AccessKeyID string `mapstructure:"access_key_id" yaml:"access_key_id"`
 	// SecretAccessKey 是对象存储访问密钥。
 	SecretAccessKey string `mapstructure:"secret_access_key" yaml:"secret_access_key"`
-	// PublicBaseURL 是前端可直接访问的公开前缀，例如 https://cdn.example.com/bucket。
+	// PublicBaseURL 是历史公开访问前缀；当前私有桶访问会改用预签名链接。
 	PublicBaseURL string `mapstructure:"public_base_url" yaml:"public_base_url"`
+	// PresignExpireSeconds 是 S3 预签名访问链接有效期，单位秒；小于等于 0 时使用默认值。
+	PresignExpireSeconds int `mapstructure:"presign_expire_seconds" yaml:"presign_expire_seconds"`
 	// UsePathStyle 控制是否使用 path-style 访问，MinIO 等 S3 兼容服务通常需要开启。
 	UsePathStyle bool `mapstructure:"use_path_style" yaml:"use_path_style"`
 	// Prefix 是对象 key 前缀，用于把上传文件放到固定目录下。

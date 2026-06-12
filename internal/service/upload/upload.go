@@ -21,7 +21,7 @@ type UploadUseCase interface {
 type uploadResponse struct {
 	// Key 文件在 S3/对象存储桶里的对象路径，相当于存储内部的文件名
 	Key string `json:"key"`
-	// URL 前端可以直接访问的公开地址，是用配置里的 public_base_url 加上 key 拼出来的
+	// URL 前端可以直接访问的临时签名地址，适用于私有桶读取对象
 	URL string `json:"url"`
 }
 
@@ -31,7 +31,7 @@ func NewUploadService(useCase UploadUseCase) *UploadService {
 
 // Upload 上传文件
 // @Summary 上传文件
-// @Description 使用 S3 兼容对象存储上传文件，返回公开访问地址
+// @Description 使用 S3 兼容对象存储上传文件，返回临时签名访问地址
 // @Tags upload
 // @Accept multipart/form-data
 // @Produce json

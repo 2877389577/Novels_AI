@@ -10,6 +10,7 @@ import (
 	"log"
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -58,6 +59,7 @@ func main() {
 		AccessKeyID:     config.Upload.S3.AccessKeyID,
 		SecretAccessKey: config.Upload.S3.SecretAccessKey,
 		PublicBaseURL:   config.Upload.S3.PublicBaseURL,
+		PresignExpire:   time.Duration(config.Upload.S3.PresignExpireSeconds) * time.Second,
 		UsePathStyle:    config.Upload.S3.UsePathStyle,
 		Prefix:          config.Upload.S3.Prefix,
 	}, apiKeyCrypto, db)
